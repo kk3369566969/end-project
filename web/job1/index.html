@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>方块躲避游戏</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game-page">
+    <h1>方块躲避游戏</h1>
+    <div class="info">
+      <span>时间：<b id="time">0</b> 秒</span>
+      <span>分数：<b id="score">0</b></span>
+      <span>最高分：<b id="best">0</b></span>
+    </div>
+
+    <div id="gameArea" class="game-area" aria-label="游戏区域">
+      <div id="player" class="player"></div>
+      <div id="message" class="message">点击“开始游戏”</div>
+    </div>
+
+    <div class="buttons">
+      <button id="startButton">开始游戏</button>
+      <button id="restartButton">重新开始</button>
+    </div>
+
+    <div class="controls" aria-label="方向控制">
+      <button data-direction="up" aria-label="向上移动">↑</button>
+      <div>
+        <button data-direction="left" aria-label="向左移动">←</button>
+        <button data-direction="down" aria-label="向下移动">↓</button>
+        <button data-direction="right" aria-label="向右移动">→</button>
+      </div>
+    </div>
+    <p class="tip">使用方向键或 WASD 移动红色方块，撞到障碍物游戏结束。</p>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
