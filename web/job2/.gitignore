@@ -2,3 +2,8 @@ node_modules/
 dist/
 .npm-cache/
 .env
+.idea/
+.playwright-cli/
+.skill-repo
+output/playwright/*.png
+output/playwright/python-packages/
