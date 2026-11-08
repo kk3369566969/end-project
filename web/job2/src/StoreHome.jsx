@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   ArrowLeftRight,
-  Bell,
   BadgePercent,
   BookOpen,
   ChevronDown,
@@ -43,7 +42,6 @@ export function StoreRail({
   cartCount,
   onOpenBag,
   onSearch,
-  notifications = [],
   adminSection = "overview",
   onAdminSection,
 }) {
@@ -197,13 +195,9 @@ export function StoreRail({
             <CalendarDays size={15} />
             <span>读书会</span>
           </button>
-          <button className={activeView === "challenges" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("challenges")}>
+          <button className={activeView === "growth" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("growth")}>
             <Target size={15} />
-            <span>阅读挑战</span>
-          </button>
-          <button className={activeView === "leaderboard" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("leaderboard")}>
-            <Trophy size={15} />
-            <span>阅读榜单</span>
+            <span>阅读成长</span>
           </button>
         </div>
         </div>
@@ -220,11 +214,6 @@ export function StoreRail({
           <button className={activeView === "analytics" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("analytics")}>
             <BarChart3 size={15} />
             <span>阅读数据</span>
-          </button>
-          <button className={activeView === "messages" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("messages")}>
-            <Bell size={15} />
-            <span>消息中心</span>
-            {notifications.filter((item) => !item.read).length > 0 && <b className="rail-unread-count">{notifications.filter((item) => !item.read).length}</b>}
           </button>
           {authUser.role === "admin" && (
             <button className={activeView === "admin" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("admin")}>

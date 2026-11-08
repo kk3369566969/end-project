@@ -3,7 +3,6 @@ import {
   ArrowRight,
   ArrowLeftRight,
   BarChart3,
-  Bell,
   BookMarked,
   BookOpen,
   BookOpenCheck,
@@ -292,7 +291,6 @@ function App() {
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [activeUserProfile, setActiveUserProfile] = useState(null);
-  const [notifications, setNotifications] = useState([]);
   const [secondhand, setSecondhand] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [challenges, setChallenges] = useState([]);
@@ -344,17 +342,14 @@ function App() {
       Promise.all([
         fetch("/api/profile", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
         fetch("/api/reading", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
-        fetch("/api/notifications", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
       ])
-        .then(([nextProfile, nextReading, nextNotifications]) => {
+        .then(([nextProfile, nextReading]) => {
           setProfile(nextProfile);
           setReading(nextReading);
-          setNotifications(nextNotifications);
         })
         .catch(() => {
           setProfile(fallbackProfile);
           setReading({ shelves: { want: [], reading: [], read: [] }, history: [], stats: {} });
-          setNotifications([]);
         });
     if (view === "secondhand")
       fetch("/api/secondhand", { headers: authHeaders() })
@@ -366,26 +361,24 @@ function App() {
         .then((res) => (res.ok ? res.json() : Promise.reject()))
         .then(setClubs)
         .catch(() => setClubs([]));
-    if (view === "challenges")
-      fetch("/api/challenges", { headers: authHeaders() })
-        .then((res) => (res.ok ? res.json() : Promise.reject()))
-        .then(setChallenges)
-        .catch(() => setChallenges([]));
     if (view === "analytics")
       fetch("/api/analytics/me", { headers: authHeaders() })
         .then((res) => (res.ok ? res.json() : Promise.reject()))
         .then(setAnalytics)
         .catch(() => setAnalytics(null));
-    if (view === "leaderboard")
-      fetch("/api/reading/leaderboard", { headers: authHeaders() })
-        .then((res) => (res.ok ? res.json() : Promise.reject()))
-        .then(setLeaderboard)
-        .catch(() => setLeaderboard(null));
-    if (view === "messages")
-      fetch("/api/notifications", { headers: authHeaders() })
-        .then((res) => (res.ok ? res.json() : Promise.reject()))
-        .then(setNotifications)
-        .catch(() => setNotifications([]));
+    if (view === "growth")
+      Promise.all([
+        fetch("/api/challenges", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
+        fetch("/api/reading/leaderboard", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
+      ])
+        .then(([nextChallenges, nextLeaderboard]) => {
+          setChallenges(nextChallenges);
+          setLeaderboard(nextLeaderboard);
+        })
+        .catch(() => {
+          setChallenges([]);
+          setLeaderboard(null);
+        });
   }, [view, forumCategory, forumSearch]);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -426,10 +419,6 @@ function App() {
   async function saveChallengeProgress(challenge, payload) {
     const response = await fetch(`/api/challenges/${challenge.id}/progress`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(payload) });
     if (response.ok) { const next = await response.json(); setChallenges((current) => current.map((item) => item.id === next.id ? next : item)); notify("挑战进度已保存"); }
-  }
-  async function markNotification(id) {
-    const response = await fetch(`/api/notifications/${id}/read`, { method: "POST", headers: authHeaders() });
-    if (response.ok) setNotifications((current) => current.map((item) => item.id === id ? { ...item, read: true } : item));
   }
   function addToCart(book) {
     setCart((current) => {
@@ -687,7 +676,6 @@ function App() {
     onLogout: handleLogout,
     cartCount,
     onOpenBag: () => setCartOpen(true),
-    notifications,
     adminSection,
     onAdminSection: setAdminSection,
     onSearch: () => {
@@ -821,8 +809,6 @@ function App() {
               onFollowAuthor={followAuthor}
               onOpenAuthor={openUserProfile}
               viewerId={authUser.id}
-              notifications={notifications}
-              onReadNotifications={async () => { await fetch("/api/notifications/read", { method: "POST", headers: authHeaders() }); setNotifications((current) => current.map((item) => ({ ...item, read: true }))); }}
             />
           </section>
         </main>
@@ -858,28 +844,16 @@ function App() {
           <section className="store-content workspace-content"><ClubsView clubs={clubs} books={books} onCreate={publishClub} onToggle={toggleClub} /></section>
         </main>
       )}
-      {view === "challenges" && (
+      {view === "growth" && (
         <main className="store-workspace workspace-page">
           <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><ChallengesView challenges={challenges} onJoin={toggleChallenge} onSaveProgress={saveChallengeProgress} /></section>
+          <section className="store-content workspace-content"><ReadingGrowthView challenges={challenges} leaderboard={leaderboard} onJoin={toggleChallenge} onSaveProgress={saveChallengeProgress} /></section>
         </main>
       )}
       {view === "analytics" && (
         <main className="store-workspace workspace-page">
           <StoreRail {...workspaceRailProps} />
           <section className="store-content workspace-content"><ReaderAnalyticsView analytics={analytics} /></section>
-        </main>
-      )}
-      {view === "messages" && (
-        <main className="store-workspace workspace-page">
-          <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><MessagesView notifications={notifications} onMark={markNotification} onMarkAll={async () => { await fetch("/api/notifications/read", { method: "POST", headers: authHeaders() }); setNotifications((current) => current.map((item) => ({ ...item, read: true }))); }} /></section>
-        </main>
-      )}
-      {view === "leaderboard" && (
-        <main className="store-workspace workspace-page">
-          <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><LeaderboardView leaderboard={leaderboard} /></section>
         </main>
       )}
       <footer>
@@ -917,8 +891,6 @@ function App() {
             setOrder(created);
             setCart([]);
             setCheckoutOpen(false);
-            const response = await fetch("/api/notifications", { headers: authHeaders() });
-            if (response.ok) setNotifications(await response.json());
           }}
         />
       )}
@@ -1949,8 +1921,13 @@ function ClubsView({ clubs, books, onCreate, onToggle }) {
   return <main className="feature-page container"><FeatureHeader eyebrow="BOOK CLUB EVENTS" title="读书会活动" description="线上共读、线下见面，把书里的问题带到真实对话里。" action={<button className="button button-dark" onClick={() => setOpen(true)}><Plus size={15} /> 发起读书会</button>} /><div className="feature-grid">{clubs.map((club) => <article className="feature-card club-card" key={club.id}>{club.image && <img className="club-cover" src={club.image} alt="活动封面" />}<div className="club-date"><CalendarDays size={20} /><strong>{new Date(club.eventAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric" })}</strong><span>{new Date(club.eventAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</span></div><div className="feature-card-body"><span className="section-kicker">{club.location}</span><h3>{club.title}</h3><p>{club.description}</p><div className="club-meta"><span><BookMarked size={14} /> {club.bookTitle}</span><span><Users size={14} /> {club.memberCount}/{club.capacity}</span><span>发起人 {club.host}</span></div><button className={`button ${club.joined ? "button-outline" : "button-dark"}`} onClick={() => onToggle(club)}>{club.joined ? <><CheckCircle2 size={15} /> 已报名</> : "报名参加"}</button></div></article>)}{!clubs.length && <div className="empty-state"><CalendarDays size={28} /><h3>暂时没有活动</h3><p>发起一场共读，邀请书友一起开始。</p></div>}</div>{open && <div className="overlay" onClick={() => setOpen(false)}><div className="form-modal" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><span className="section-kicker">BOOK CLUB</span><h2>发起读书会</h2></div><button className="icon-button" onClick={() => setOpen(false)}><X size={20} /></button></div><form className="modal-form" onSubmit={submit}><label>活动标题<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>共读书籍<select value={form.bookId} onChange={(e) => setForm({ ...form, bookId: e.target.value })}><option value="">自由选书</option>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select></label><label>活动时间<input required type="datetime-local" value={form.eventAt} onChange={(e) => setForm({ ...form, eventAt: e.target.value })} /></label><label>地点或会议链接<input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></label><label>人数上限<input type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} /></label><label>上传活动图片<input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (!file || file.size > 3 * 1024 * 1024) return; const reader = new FileReader(); reader.onload = () => setForm((current) => ({ ...current, coverData: String(reader.result || "") })); reader.readAsDataURL(file); }} /><small className="field-hint">支持 JPG、PNG，最大 3MB</small></label><label>活动介绍<textarea required rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label><button className="button button-dark button-wide">发布活动</button></form></div></div>}</main>;
 }
 
-function ChallengesView({ challenges, onJoin, onSaveProgress }) {
-  return <main className="feature-page container"><FeatureHeader eyebrow="READING CHALLENGES" title="阅读挑战" description="给自己一个可完成的目标，把阅读变成持续的习惯。" /><div className="feature-grid challenge-grid">{challenges.map((challenge) => { const bookRate = challenge.targetBooks ? Math.min(100, challenge.booksCompleted / challenge.targetBooks * 100) : 0; const minuteRate = challenge.targetMinutes ? Math.min(100, challenge.minutes / challenge.targetMinutes * 100) : 0; return <article className="feature-card challenge-card" key={challenge.id}><div className="challenge-icon"><Trophy size={23} /></div><div className="feature-card-body"><span className="section-kicker">{challenge.startDate} — {challenge.endDate}</span><h3>{challenge.title}</h3><p>{challenge.description}</p><div className="challenge-progress"><div><span>完成书籍 {challenge.booksCompleted}/{challenge.targetBooks}</span><b>{Math.round(bookRate)}%</b></div><i><b style={{ width: `${bookRate}%` }} /></i><div><span>阅读时长 {challenge.minutes}/{challenge.targetMinutes} 分钟</span><b>{Math.round(minuteRate)}%</b></div><i><b style={{ width: `${minuteRate}%` }} /></i></div><div className="challenge-actions">{!challenge.joined ? <button className="button button-dark" onClick={() => onJoin(challenge)}><Target size={15} /> 加入挑战</button> : <ChallengeProgressForm challenge={challenge} onSave={onSaveProgress} />}</div></div></article>; })}{!challenges.length && <div className="empty-state"><Trophy size={28} /><h3>暂无进行中的挑战</h3><p>管理员发布挑战后，会在这里显示。</p></div>}</div></main>;
+function ReadingGrowthView({ challenges, leaderboard, onJoin, onSaveProgress }) {
+  const [tab, setTab] = useState("challenge");
+  return <main className="feature-page container"><FeatureHeader eyebrow="READING GROWTH" title="阅读成长" description="用挑战建立阅读节奏，再用榜单看看自己和书友走了多远。" /><div className="growth-tabs"><button className={tab === "challenge" ? "is-active" : ""} onClick={() => setTab("challenge")}><Target size={15} /> 挑战进度</button><button className={tab === "leaderboard" ? "is-active" : ""} onClick={() => setTab("leaderboard")}><Trophy size={15} /> 阅读榜单</button></div>{tab === "challenge" ? <ChallengesPanel challenges={challenges} onJoin={onJoin} onSaveProgress={onSaveProgress} /> : <LeaderboardPanel leaderboard={leaderboard} />}</main>;
+}
+
+function ChallengesPanel({ challenges, onJoin, onSaveProgress }) {
+  return <section className="growth-panel"><div className="feature-grid challenge-grid">{challenges.map((challenge) => { const bookRate = challenge.targetBooks ? Math.min(100, challenge.booksCompleted / challenge.targetBooks * 100) : 0; const minuteRate = challenge.targetMinutes ? Math.min(100, challenge.minutes / challenge.targetMinutes * 100) : 0; return <article className="feature-card challenge-card" key={challenge.id}><div className="challenge-icon"><Trophy size={23} /></div><div className="feature-card-body"><span className="section-kicker">{challenge.startDate} — {challenge.endDate}</span><h3>{challenge.title}</h3><p>{challenge.description}</p><div className="challenge-progress"><div><span>完成书籍 {challenge.booksCompleted}/{challenge.targetBooks}</span><b>{Math.round(bookRate)}%</b></div><i><b style={{ width: `${bookRate}%` }} /></i><div><span>阅读时长 {challenge.minutes}/{challenge.targetMinutes} 分钟</span><b>{Math.round(minuteRate)}%</b></div><i><b style={{ width: `${minuteRate}%` }} /></i></div><div className="challenge-actions">{!challenge.joined ? <button className="button button-dark" onClick={() => onJoin(challenge)}><Target size={15} /> 加入挑战</button> : <ChallengeProgressForm challenge={challenge} onSave={onSaveProgress} />}</div></div></article>; })}{!challenges.length && <div className="empty-state"><Trophy size={28} /><h3>暂无进行中的挑战</h3><p>管理员发布挑战后，会在这里显示。</p></div>}</div></section>;
 }
 
 function ChallengeProgressForm({ challenge, onSave }) {
@@ -1964,17 +1941,11 @@ function ReaderAnalyticsView({ analytics }) {
   return <main className="feature-page container"><FeatureHeader eyebrow="MY READING DATA" title="我的数据" description="把阅读时间、书目偏好和年度目标放在一张清晰的图表里。" /><div className="analytics-stat-grid"><div><Clock3 size={18} /><span>阅读分钟</span><strong>{analytics.summary.minutes}</strong></div><div><BookOpenCheck size={18} /><span>读完书籍</span><strong>{analytics.summary.finished}</strong></div><div><Library size={18} /><span>收录书籍</span><strong>{analytics.summary.books}</strong></div><div><ShoppingBag size={18} /><span>购书消费</span><strong>¥{analytics.summary.spending.toFixed(2)}</strong></div></div><div className="analytics-grid"><section className="feature-card"><div className="content-heading"><div><span className="section-kicker">阅读偏好</span><h2>我在读什么</h2></div></div>{analytics.categories.length ? analytics.categories.map((item) => <div className="bar-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.count / maxCategory * 100}%` }} /></i><strong>{item.count}</strong></div>) : <p className="muted-label">还没有足够的书架数据。</p>}</section><section className="feature-card"><div className="content-heading"><div><span className="section-kicker">最近六个月</span><h2>浏览趋势</h2></div></div><div className="month-bars">{analytics.monthly.length ? analytics.monthly.slice().reverse().map((item) => <div key={item.month}><b style={{ height: `${Math.max(12, item.count * 18)}px` }} /><span>{item.month.slice(5)}</span></div>) : <p className="muted-label">还没有浏览记录。</p>}</div></section></div></main>;
 }
 
-function MessagesView({ notifications, onMark, onMarkAll }) {
-  const unread = notifications.filter((item) => !item.read).length;
-  const typeLabels = { system: "系统通知", order: "订单通知", order_status: "订单进度", follow: "关注提醒", post_like: "帖子互动", review_like: "评论互动" };
-  return <main className="feature-page container"><FeatureHeader eyebrow="MESSAGE CENTER" title="消息中心" description="订单创建、发货状态和书友互动都会在这里留下可追踪的提醒。" action={unread ? <button className="button button-outline" onClick={onMarkAll}>全部标为已读</button> : null} /><div className="message-list">{notifications.map((item) => <article className={`message-card ${item.read ? "is-read" : "is-unread"}`} key={item.id}><div className="message-icon"><Bell size={17} /></div><div><div className="message-meta"><strong>{typeLabels[item.type] || "互动提醒"}</strong><time>{dateText(item.createdAt)}</time></div><p>{item.content}</p></div>{!item.read && <button className="message-read" onClick={() => onMark(item.id)}>标为已读</button>}</article>)}{!notifications.length && <div className="empty-state"><Bell size={28} /><h3>暂时没有消息</h3><p>下单、订单状态变化或书友互动后，提醒会显示在这里。</p></div>}</div></main>;
-}
-
-function LeaderboardView({ leaderboard }) {
+function LeaderboardPanel({ leaderboard }) {
   const [tab, setTab] = useState("finished");
   const tabs = [["finished", "年度读完", "本"], ["minutes", "阅读时长", "分钟"], ["active", "最近活跃", "次浏览"]];
   const rows = leaderboard?.[tab] || [];
-  return <main className="feature-page container"><FeatureHeader eyebrow="READING LEADERBOARD" title="阅读排行榜" description="按真实阅读书架和浏览记录统计，看看本月有哪些书友保持着阅读节奏。" /><div className="leaderboard-tabs">{tabs.map(([id, label]) => <button key={id} className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}>{label}</button>)}</div><div className="leaderboard-list">{rows.map((item) => <article className={`leaderboard-row rank-${item.rank}`} key={item.id}><strong className="leaderboard-rank">{item.rank <= 3 ? <Medal size={19} /> : item.rank}</strong><div className="leaderboard-avatar">{item.name.slice(0, 1)}</div><div className="leaderboard-user"><strong>{item.name}</strong><span>{tab === "finished" ? `阅读时长 ${item.minutes} 分钟` : tab === "minutes" ? `读完 ${item.finished} 本` : "保持阅读记录"}</span></div><b>{item.score}<small>{tabs.find(([id]) => id === tab)?.[2]}</small></b></article>)}{!rows.length && <div className="empty-state"><Trophy size={28} /><h3>还没有排行榜数据</h3><p>开始记录阅读后，就会出现在这里。</p></div>}</div></main>;
+  return <section className="growth-panel"><div className="leaderboard-tabs">{tabs.map(([id, label]) => <button key={id} className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}>{label}</button>)}</div><div className="leaderboard-list">{rows.map((item) => <article className={`leaderboard-row rank-${item.rank}`} key={item.id}><strong className="leaderboard-rank">{item.rank <= 3 ? <Medal size={19} /> : item.rank}</strong><div className="leaderboard-avatar">{item.name.slice(0, 1)}</div><div className="leaderboard-user"><strong>{item.name}</strong><span>{tab === "finished" ? `阅读时长 ${item.minutes} 分钟` : tab === "minutes" ? `读完 ${item.finished} 本` : "保持阅读记录"}</span></div><b>{item.score}<small>{tabs.find(([id]) => id === tab)?.[2]}</small></b></article>)}{!rows.length && <div className="empty-state"><Trophy size={28} /><h3>还没有排行榜数据</h3><p>开始记录阅读后，就会出现在这里。</p></div>}</div></section>;
 }
 
 function AdminAnalytics({ analytics }) {
@@ -1988,7 +1959,7 @@ function AdminInventory({ inventory, onSave }) {
   return <section className="admin-section"><div className="admin-section-head"><div><span className="section-kicker">INVENTORY CONTROL</span><h2>库存管理</h2></div><span className="muted-label">低于 5 本自动标记预警</span></div><div className="inventory-summary"><strong>{inventory.filter((item) => item.lowStock).length}</strong><span>本书需要补货</span><strong>{inventory.filter((item) => item.status === "paused").length}</strong><span>本书已暂停销售</span></div><div className="admin-table-wrap"><table className="admin-table inventory-table"><thead><tr><th>图书</th><th>当前库存</th><th>销售状态</th><th>调整原因</th><th>操作</th></tr></thead><tbody>{inventory.map((item) => { const value = draft(item); return <tr key={item.id}><td><strong>{item.title}</strong><small>{item.author}</small></td><td><input className={item.lowStock ? "inventory-stock low" : "inventory-stock"} type="number" min="0" value={value.stock} onChange={(e) => setDrafts((current) => ({ ...current, [item.id]: { ...value, stock: e.target.value } }))} /><small>{item.lowStock ? "库存预警" : `已调整 ${item.changes} 次`}</small></td><td><select value={value.status} onChange={(e) => setDrafts((current) => ({ ...current, [item.id]: { ...value, status: e.target.value } }))}><option value="active">正常销售</option><option value="paused">暂停销售</option><option value="sold_out">售罄</option></select></td><td><input value={value.reason} onChange={(e) => setDrafts((current) => ({ ...current, [item.id]: { ...value, reason: e.target.value } }))} /></td><td><button className="button button-outline inventory-save" onClick={() => onSave(item, value)}>保存库存</button></td></tr>; })}</tbody></table>{!inventory.length && <div className="admin-empty">暂无库存数据</div>}</div></section>;
 }
 
-function ForumView({ posts, category, setCategory, search, setSearch, onNew, onOpen, onLike, onReport, onFollowAuthor, onOpenAuthor, viewerId, notifications = [], onReadNotifications }) {
+function ForumView({ posts, category, setCategory, search, setSearch, onNew, onOpen, onLike, onReport, onFollowAuthor, onOpenAuthor, viewerId }) {
   const [feed, setFeed] = useState("推荐");
   const [likedPosts, setLikedPosts] = useState([]);
   const [savedPosts, setSavedPosts] = useState([]);
@@ -2091,7 +2062,6 @@ function ForumView({ posts, category, setCategory, search, setSearch, onNew, onO
           ))}
         </div>
         <div className="forum-actions">
-          <button className="notification-button" onClick={onReadNotifications} title="消息通知"><Bell size={16} /> {notifications.filter((item) => !item.read).length || ""}</button>
           <div className="search-wrap">
             <Search size={17} />
             <input
