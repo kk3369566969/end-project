@@ -395,6 +395,7 @@ app.get("/api/analytics/me", requireUser, async (req, res) => {
 });
 app.get("/api/reading/leaderboard", requireUser, async (_req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
     res.json(await getReadingLeaderboard());
   } catch (error) {
     res.status(500).json({ message: "阅读排行榜加载失败", detail: error.message });

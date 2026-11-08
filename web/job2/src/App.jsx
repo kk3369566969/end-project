@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   ArrowLeftRight,
@@ -28,6 +28,7 @@ import {
   PackageCheck,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Send,
   ShoppingBag,
@@ -296,6 +297,9 @@ function App() {
   const [challenges, setChallenges] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
+  const [growthRefreshing, setGrowthRefreshing] = useState(false);
+  const [growthUpdatedAt, setGrowthUpdatedAt] = useState(null);
+  const growthRefreshRef = useRef(null);
   const authHeaders = () => ({
     Authorization: `Bearer ${getSessionToken()}`,
   });
@@ -366,19 +370,42 @@ function App() {
         .then((res) => (res.ok ? res.json() : Promise.reject()))
         .then(setAnalytics)
         .catch(() => setAnalytics(null));
-    if (view === "growth")
-      Promise.all([
-        fetch("/api/challenges", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
-        fetch("/api/reading/leaderboard", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
-      ])
-        .then(([nextChallenges, nextLeaderboard]) => {
-          setChallenges(nextChallenges);
-          setLeaderboard(nextLeaderboard);
-        })
-        .catch(() => {
-          setChallenges([]);
-          setLeaderboard(null);
-        });
+    if (view === "growth") {
+      let cancelled = false;
+      let requestInFlight = false;
+      const refreshGrowthData = async () => {
+        if (requestInFlight) return;
+        requestInFlight = true;
+        setGrowthRefreshing(true);
+        try {
+          const [nextChallenges, nextLeaderboard] = await Promise.all([
+            fetch("/api/challenges", { headers: authHeaders(), cache: "no-store" }).then((res) => (res.ok ? res.json() : Promise.reject())),
+            fetch("/api/reading/leaderboard", { headers: authHeaders(), cache: "no-store" }).then((res) => (res.ok ? res.json() : Promise.reject())),
+          ]);
+          if (!cancelled) {
+            setChallenges(nextChallenges);
+            setLeaderboard(nextLeaderboard);
+            setGrowthUpdatedAt(new Date());
+          }
+        } catch {
+          // Keep the last successful result visible during a temporary network error.
+        } finally {
+          requestInFlight = false;
+          if (!cancelled) setGrowthRefreshing(false);
+        }
+      };
+      setGrowthUpdatedAt(null);
+      refreshGrowthData();
+      const timer = window.setInterval(refreshGrowthData, 10000);
+      window.addEventListener("focus", refreshGrowthData);
+      growthRefreshRef.current = refreshGrowthData;
+      return () => {
+        cancelled = true;
+        window.clearInterval(timer);
+        window.removeEventListener("focus", refreshGrowthData);
+        if (growthRefreshRef.current === refreshGrowthData) growthRefreshRef.current = null;
+      };
+    }
   }, [view, forumCategory, forumSearch]);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -550,7 +577,10 @@ function App() {
   }
   async function updateReading(bookId, payload) {
     const response = await fetch(`/api/reading/${bookId}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(payload) });
-    if (response.ok) setReading(await response.json());
+    if (response.ok) {
+      setReading(await response.json());
+      if (view === "growth") growthRefreshRef.current?.();
+    }
   }
   async function openPost(post) {
     setActivePost(post);
@@ -847,7 +877,7 @@ function App() {
       {view === "growth" && (
         <main className="store-workspace workspace-page">
           <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><ReadingGrowthView challenges={challenges} leaderboard={leaderboard} onJoin={toggleChallenge} onSaveProgress={saveChallengeProgress} /></section>
+          <section className="store-content workspace-content"><ReadingGrowthView challenges={challenges} leaderboard={leaderboard} onJoin={toggleChallenge} onSaveProgress={saveChallengeProgress} refreshing={growthRefreshing} updatedAt={growthUpdatedAt} onRefresh={() => growthRefreshRef.current?.()} /></section>
         </main>
       )}
       {view === "analytics" && (
@@ -1586,11 +1616,6 @@ function AdminView({ authUser, tab, onTabChange }) {
               </div>
             ))}
           </div>
-          <div className="admin-overview-note">
-            <span className="section-kicker">数据来源</span>
-            <h2>MySQL 已连接</h2>
-            <p>当前后台统计、图书、用户、订单和社区内容均从 bookstore 数据库读取。</p>
-          </div>
         </div>
       )}
       {tab === "books" && (
@@ -1921,9 +1946,10 @@ function ClubsView({ clubs, books, onCreate, onToggle }) {
   return <main className="feature-page container"><FeatureHeader eyebrow="BOOK CLUB EVENTS" title="读书会活动" description="线上共读、线下见面，把书里的问题带到真实对话里。" action={<button className="button button-dark" onClick={() => setOpen(true)}><Plus size={15} /> 发起读书会</button>} /><div className="feature-grid">{clubs.map((club) => <article className="feature-card club-card" key={club.id}>{club.image && <img className="club-cover" src={club.image} alt="活动封面" />}<div className="club-date"><CalendarDays size={20} /><strong>{new Date(club.eventAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric" })}</strong><span>{new Date(club.eventAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</span></div><div className="feature-card-body"><span className="section-kicker">{club.location}</span><h3>{club.title}</h3><p>{club.description}</p><div className="club-meta"><span><BookMarked size={14} /> {club.bookTitle}</span><span><Users size={14} /> {club.memberCount}/{club.capacity}</span><span>发起人 {club.host}</span></div><button className={`button ${club.joined ? "button-outline" : "button-dark"}`} onClick={() => onToggle(club)}>{club.joined ? <><CheckCircle2 size={15} /> 已报名</> : "报名参加"}</button></div></article>)}{!clubs.length && <div className="empty-state"><CalendarDays size={28} /><h3>暂时没有活动</h3><p>发起一场共读，邀请书友一起开始。</p></div>}</div>{open && <div className="overlay" onClick={() => setOpen(false)}><div className="form-modal" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><span className="section-kicker">BOOK CLUB</span><h2>发起读书会</h2></div><button className="icon-button" onClick={() => setOpen(false)}><X size={20} /></button></div><form className="modal-form" onSubmit={submit}><label>活动标题<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>共读书籍<select value={form.bookId} onChange={(e) => setForm({ ...form, bookId: e.target.value })}><option value="">自由选书</option>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select></label><label>活动时间<input required type="datetime-local" value={form.eventAt} onChange={(e) => setForm({ ...form, eventAt: e.target.value })} /></label><label>地点或会议链接<input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></label><label>人数上限<input type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} /></label><label>上传活动图片<input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (!file || file.size > 3 * 1024 * 1024) return; const reader = new FileReader(); reader.onload = () => setForm((current) => ({ ...current, coverData: String(reader.result || "") })); reader.readAsDataURL(file); }} /><small className="field-hint">支持 JPG、PNG，最大 3MB</small></label><label>活动介绍<textarea required rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label><button className="button button-dark button-wide">发布活动</button></form></div></div>}</main>;
 }
 
-function ReadingGrowthView({ challenges, leaderboard, onJoin, onSaveProgress }) {
+function ReadingGrowthView({ challenges, leaderboard, onJoin, onSaveProgress, refreshing, updatedAt, onRefresh }) {
   const [tab, setTab] = useState("challenge");
-  return <main className="feature-page container"><FeatureHeader eyebrow="READING GROWTH" title="阅读成长" description="用挑战建立阅读节奏，再用榜单看看自己和书友走了多远。" /><div className="growth-tabs"><button className={tab === "challenge" ? "is-active" : ""} onClick={() => setTab("challenge")}><Target size={15} /> 挑战进度</button><button className={tab === "leaderboard" ? "is-active" : ""} onClick={() => setTab("leaderboard")}><Trophy size={15} /> 阅读榜单</button></div>{tab === "challenge" ? <ChallengesPanel challenges={challenges} onJoin={onJoin} onSaveProgress={onSaveProgress} /> : <LeaderboardPanel leaderboard={leaderboard} />}</main>;
+  const updatedText = updatedAt ? `更新于 ${new Date(updatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : "正在同步数据";
+  return <main className="feature-page container"><FeatureHeader eyebrow="READING GROWTH" title="阅读成长" description="用挑战建立阅读节奏，再用榜单看看自己和书友走了多远。" action={<div className="growth-sync-actions"><span className="muted-label">{updatedText}</span><button className="button button-outline" onClick={onRefresh} disabled={refreshing}><RefreshCw size={15} /> {refreshing ? "同步中" : "刷新数据"}</button></div>} /><div className="growth-tabs"><button className={tab === "challenge" ? "is-active" : ""} onClick={() => setTab("challenge")}><Target size={15} /> 挑战进度</button><button className={tab === "leaderboard" ? "is-active" : ""} onClick={() => setTab("leaderboard")}><Trophy size={15} /> 阅读榜单</button></div>{tab === "challenge" ? <ChallengesPanel challenges={challenges} onJoin={onJoin} onSaveProgress={onSaveProgress} /> : <LeaderboardPanel leaderboard={leaderboard} />}</main>;
 }
 
 function ChallengesPanel({ challenges, onJoin, onSaveProgress }) {

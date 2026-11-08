@@ -7,3 +7,4 @@ dist/
 .skill-repo
 output/playwright/*.png
 output/playwright/python-packages/
+output/playwright/*.py

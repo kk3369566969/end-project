@@ -3496,6 +3496,7 @@ footer {
 /* Cross-module feature workspace */
 .feature-page { padding: 34px 44px 64px; max-width: 1180px; margin: 0 auto; }
 .feature-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+.growth-sync-actions { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
 .feature-head h1 { margin: 5px 0 8px; font-size: clamp(30px, 4vw, 48px); letter-spacing: -.04em; }
 .feature-head p { margin: 0; color: var(--muted); max-width: 600px; line-height: 1.7; }
 .feature-note { display: flex; gap: 10px; align-items: center; padding: 14px 16px; margin-bottom: 24px; border: 1px solid var(--line); background: rgba(255,255,255,.42); color: var(--muted); font-size: 13px; }
