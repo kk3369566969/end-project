@@ -256,6 +256,8 @@ const fallbackProfile = {
 };
 const dateText = (value) =>
   new Date(value).toLocaleDateString("zh-CN", { month: "long", day: "numeric" });
+const SESSION_TOKEN_KEY = "paper-lantern-token";
+const getSessionToken = () => window.sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
 
 function App() {
   const [authUser, setAuthUser] = useState(null);
@@ -297,10 +299,16 @@ function App() {
   const [analytics, setAnalytics] = useState(null);
   const [leaderboard, setLeaderboard] = useState(null);
   const authHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem("paper-lantern-token") || ""}`,
+    Authorization: `Bearer ${getSessionToken()}`,
   });
   useEffect(() => {
-    const token = localStorage.getItem("paper-lantern-token");
+    // Migrate a legacy shared token once, then keep this tab isolated.
+    const legacyToken = window.localStorage.getItem(SESSION_TOKEN_KEY);
+    const token = getSessionToken() || legacyToken;
+    if (legacyToken && !getSessionToken()) {
+      window.sessionStorage.setItem(SESSION_TOKEN_KEY, legacyToken);
+      window.localStorage.removeItem(SESSION_TOKEN_KEY);
+    }
     if (!token) {
       setAuthLoading(false);
       return;
@@ -311,7 +319,7 @@ function App() {
         setAuthUser(data.user);
         if (data.user.role === "admin") setView("admin");
       })
-      .catch(() => localStorage.removeItem("paper-lantern-token"))
+      .catch(() => window.sessionStorage.removeItem(SESSION_TOKEN_KEY))
       .finally(() => setAuthLoading(false));
   }, []);
   useEffect(() => {
@@ -588,7 +596,7 @@ function App() {
     setPostComments((current) => current.map((comment) => comment.id === commentId ? { ...comment, likes: data.likes, liked: data.liked } : comment));
   }
   function handleLogin(result) {
-    localStorage.setItem("paper-lantern-token", result.token);
+    window.sessionStorage.setItem(SESSION_TOKEN_KEY, result.token);
     setAuthUser(result.user);
     setProfile((current) => ({
       ...current,
@@ -599,12 +607,12 @@ function App() {
     setView(result.user.role === "admin" ? "admin" : "home");
   }
   async function handleLogout() {
-    const token = localStorage.getItem("paper-lantern-token");
+    const token = getSessionToken();
     await fetch("/api/auth/logout", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
-    localStorage.removeItem("paper-lantern-token");
+    window.sessionStorage.removeItem(SESSION_TOKEN_KEY);
     setAuthUser(null);
   }
   if (authLoading)
@@ -1427,7 +1435,7 @@ function AdminView({ authUser, tab, onTabChange }) {
   const [bookForm, setBookForm] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const token = () => localStorage.getItem("paper-lantern-token");
+  const token = getSessionToken;
   const adminFetch = async (url, options = {}) => {
     const response = await fetch(url, {
       ...options,
@@ -2920,7 +2928,7 @@ function CheckoutModal({ total, cart, onClose, onSuccess }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("paper-lantern-token") || ""}`,
+          Authorization: `Bearer ${getSessionToken()}`,
         },
         body: JSON.stringify({ customer, items: cart, total }),
       });
