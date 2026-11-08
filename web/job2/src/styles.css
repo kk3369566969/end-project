@@ -3362,6 +3362,73 @@ footer {
   min-height: 27px;
 }
 
+/* Group the reader navigation by intent so the rail feels like a workspace. */
+.rail-section {
+  padding: 0 4px 9px;
+}
+.rail-section + .rail-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 10px;
+}
+.rail-section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 8px 5px;
+  color: rgba(255, 255, 255, 0.88);
+  font: 600 12px var(--serif);
+}
+.rail-section-title small {
+  color: rgba(255, 255, 255, 0.36);
+  font: 8px var(--mono);
+  letter-spacing: 0.08em;
+}
+.rail-button-primary {
+  min-height: 32px;
+  font-weight: 600;
+}
+.rail-button-primary .rail-caret {
+  margin-left: auto;
+}
+.rail-subgroup-shelf {
+  margin: 1px 0 4px 14px;
+  padding: 2px 0 2px 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+.rail-subgroup-shelf .rail-button {
+  min-height: 27px;
+  padding: 0 8px;
+  gap: 7px;
+  font-size: 11px;
+}
+.rail-category-subgroup {
+  margin: 1px 0 0 10px;
+  padding: 1px 0 1px 7px;
+}
+.rail-category-subgroup .rail-button {
+  min-height: 24px;
+  font-size: 10px;
+}
+.rail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+}
+.rail-grid-button {
+  min-height: 32px;
+  padding: 0 8px;
+  gap: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.rail-grid-button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rail-account-section {
+  padding-bottom: 0;
+}
+
 @media (max-width: 900px) {
   .store-workspace {
     grid-template-columns: 220px minmax(0, 1fr);
