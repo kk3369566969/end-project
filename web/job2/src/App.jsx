@@ -665,6 +665,16 @@ function App() {
       notify("收货地址已保存");
     }
   }
+  async function openCheckout() {
+    setCartOpen(false);
+    try {
+      const response = await fetch("/api/profile", { headers: authHeaders() });
+      if (response.ok) setProfile(await response.json());
+    } catch {
+      // The checkout form remains usable for manual entry if the profile request fails.
+    }
+    setCheckoutOpen(true);
+  }
   const workspaceRailProps = {
     activeView: view,
     section: homeSection,
@@ -677,6 +687,7 @@ function App() {
     onLogout: handleLogout,
     cartCount,
     onOpenBag: () => setCartOpen(true),
+    notifications,
     adminSection,
     onAdminSection: setAdminSection,
     onSearch: () => {
@@ -811,7 +822,7 @@ function App() {
               onOpenAuthor={openUserProfile}
               viewerId={authUser.id}
               notifications={notifications}
-              onReadNotifications={async () => { await fetch("/api/notifications/read", { method: "POST", headers: authHeaders() }); setNotifications([]); }}
+              onReadNotifications={async () => { await fetch("/api/notifications/read", { method: "POST", headers: authHeaders() }); setNotifications((current) => current.map((item) => ({ ...item, read: true }))); }}
             />
           </section>
         </main>
@@ -893,21 +904,21 @@ function App() {
           onClose={() => setCartOpen(false)}
           onUpdate={updateQuantity}
           onRemove={removeItem}
-          onCheckout={() => {
-            setCartOpen(false);
-            setCheckoutOpen(true);
-          }}
+          onCheckout={openCheckout}
         />
       )}
       {checkoutOpen && (
         <CheckoutModal
           total={total}
           cart={cart}
+          addresses={profile.addresses || []}
           onClose={() => setCheckoutOpen(false)}
-          onSuccess={(created) => {
+          onSuccess={async (created) => {
             setOrder(created);
             setCart([]);
             setCheckoutOpen(false);
+            const response = await fetch("/api/notifications", { headers: authHeaders() });
+            if (response.ok) setNotifications(await response.json());
           }}
         />
       )}
@@ -1955,7 +1966,8 @@ function ReaderAnalyticsView({ analytics }) {
 
 function MessagesView({ notifications, onMark, onMarkAll }) {
   const unread = notifications.filter((item) => !item.read).length;
-  return <main className="feature-page container"><FeatureHeader eyebrow="MESSAGE CENTER" title="消息中心" description="活动报名、评论回复、点赞和订单状态都会在这里汇总。" action={unread ? <button className="button button-outline" onClick={onMarkAll}>全部标为已读</button> : null} /><div className="message-list">{notifications.map((item) => <article className={`message-card ${item.read ? "is-read" : "is-unread"}`} key={item.id}><div className="message-icon"><Bell size={17} /></div><div><div className="message-meta"><strong>{item.type === "system" ? "系统通知" : "互动提醒"}</strong><time>{dateText(item.createdAt)}</time></div><p>{item.content}</p></div>{!item.read && <button className="message-read" onClick={() => onMark(item.id)}>标为已读</button>}</article>)}{!notifications.length && <div className="empty-state"><Bell size={28} /><h3>暂时没有消息</h3><p>新的互动和系统提醒会显示在这里。</p></div>}</div></main>;
+  const typeLabels = { system: "系统通知", order: "订单通知", order_status: "订单进度", follow: "关注提醒", post_like: "帖子互动", review_like: "评论互动" };
+  return <main className="feature-page container"><FeatureHeader eyebrow="MESSAGE CENTER" title="消息中心" description="订单创建、发货状态和书友互动都会在这里留下可追踪的提醒。" action={unread ? <button className="button button-outline" onClick={onMarkAll}>全部标为已读</button> : null} /><div className="message-list">{notifications.map((item) => <article className={`message-card ${item.read ? "is-read" : "is-unread"}`} key={item.id}><div className="message-icon"><Bell size={17} /></div><div><div className="message-meta"><strong>{typeLabels[item.type] || "互动提醒"}</strong><time>{dateText(item.createdAt)}</time></div><p>{item.content}</p></div>{!item.read && <button className="message-read" onClick={() => onMark(item.id)}>标为已读</button>}</article>)}{!notifications.length && <div className="empty-state"><Bell size={28} /><h3>暂时没有消息</h3><p>下单、订单状态变化或书友互动后，提醒会显示在这里。</p></div>}</div></main>;
 }
 
 function LeaderboardView({ leaderboard }) {
@@ -2915,10 +2927,26 @@ function UserProfileModal({ profile, onClose, onFollow, onOpenPost }) {
     </div>
   );
 }
-function CheckoutModal({ total, cart, onClose, onSuccess }) {
+function CheckoutModal({ total, cart, addresses = [], onClose, onSuccess }) {
   const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
+  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    const preferred = addresses.find((address) => address.isDefault) || addresses[0];
+    if (!preferred) {
+      setSelectedAddressId("");
+      return;
+    }
+    setSelectedAddressId(String(preferred.id));
+    setCustomer({ name: preferred.receiver, phone: preferred.phone, address: preferred.detail });
+  }, [addresses]);
+  function selectAddress(value) {
+    setSelectedAddressId(value);
+    const address = addresses.find((item) => String(item.id) === value);
+    if (address) setCustomer({ name: address.receiver, phone: address.phone, address: address.detail });
+    else setCustomer({ name: "", phone: "", address: "" });
+  }
   async function submit(e) {
     e.preventDefault();
     setLoading(true);
@@ -2955,6 +2983,18 @@ function CheckoutModal({ total, cart, onClose, onSuccess }) {
         </div>
         <form onSubmit={submit}>
           <label>
+            使用保存的地址
+            <select value={selectedAddressId} onChange={(e) => selectAddress(e.target.value)}>
+              <option value="">手动填写新地址</option>
+              {addresses.map((address) => (
+                <option key={address.id} value={address.id}>
+                  {address.label} · {address.receiver} · {address.detail}
+                </option>
+              ))}
+            </select>
+            {addresses.length > 0 && <small className="field-hint">已自动填入个人中心的默认地址，也可以在这里切换。</small>}
+          </label>
+          <label>
             收货人
             <input
               required
@@ -2967,7 +3007,7 @@ function CheckoutModal({ total, cart, onClose, onSuccess }) {
             联系电话
             <input
               required
-              pattern="[0-9+ -]{6,}"
+              pattern="[0-9*+ -]{6,}"
               value={customer.phone}
               onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
               placeholder="用于物流联系"

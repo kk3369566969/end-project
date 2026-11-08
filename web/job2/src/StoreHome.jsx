@@ -43,6 +43,7 @@ export function StoreRail({
   cartCount,
   onOpenBag,
   onSearch,
+  notifications = [],
   adminSection = "overview",
   onAdminSection,
 }) {
@@ -223,6 +224,7 @@ export function StoreRail({
           <button className={activeView === "messages" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("messages")}>
             <Bell size={15} />
             <span>消息中心</span>
+            {notifications.filter((item) => !item.read).length > 0 && <b className="rail-unread-count">{notifications.filter((item) => !item.read).length}</b>}
           </button>
           {authUser.role === "admin" && (
             <button className={activeView === "admin" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("admin")}>

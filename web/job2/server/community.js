@@ -298,6 +298,11 @@ export async function toggleFavorite(userId, bookId) {
 }
 
 export async function addAddress(userId, address) {
+  const [existing] = await query(
+    "SELECT COUNT(*) AS count FROM user_addresses WHERE user_id = ?",
+    [userId],
+  );
+  const isDefault = Number(existing[0]?.count || 0) === 0 ? 1 : 0;
   const [result] = await query(
     "INSERT INTO user_addresses (user_id, label, receiver, phone, detail, is_default) VALUES (?, ?, ?, ?, ?, ?)",
     [
@@ -306,7 +311,7 @@ export async function addAddress(userId, address) {
       address.receiver.trim(),
       address.phone.trim(),
       address.detail.trim(),
-      0,
+      isDefault,
     ],
   );
   const [rows] = await query(

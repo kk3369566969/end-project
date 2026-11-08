@@ -138,7 +138,19 @@ export async function listAdminOrders() {
 }
 
 export async function updateOrderStatus(id, status) {
+  const [currentRows] = await query(
+    "SELECT id, user_id, status FROM orders WHERE id = ?",
+    [id],
+  );
+  const current = currentRows[0];
+  if (!current) return null;
   await query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
+  if (current.user_id && current.status !== status) {
+    await query(
+      "INSERT INTO notifications (user_id, type, content) VALUES (?, 'order_status', ?)",
+      [current.user_id, `订单 #${id} 状态已更新为：${status}`],
+    );
+  }
   const [rows] = await query(
     "SELECT id, status, total_amount, customer_name, customer_phone, customer_address, created_at FROM orders WHERE id = ?",
     [id],

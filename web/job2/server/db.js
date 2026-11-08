@@ -235,6 +235,10 @@ export async function createOrder({ userId, customer, items, total }) {
         "INSERT INTO order_items (order_id, book_id, quantity, unit_price) VALUES (?, ?, ?, ?)",
         [order.insertId, item.id, item.quantity, item.price],
       );
+    await connection.query(
+      "INSERT INTO notifications (user_id, type, content) VALUES (?, 'order', ?)",
+      [userId, `订单 #${order.insertId} 已提交，当前状态：待发货`],
+    );
     await connection.commit();
     return { id: order.insertId, status: "待发货", total, createdAt: new Date().toISOString() };
   } catch (error) {
