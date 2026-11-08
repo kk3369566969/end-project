@@ -47,6 +47,13 @@ export function StoreRail({
   onAdminSection,
 }) {
   const [categoryOpen, setCategoryOpen] = useState(activeView === "home" && section === "shelf");
+  const [readingOpen, setReadingOpen] = useState(activeView === "home");
+  useEffect(() => {
+    if (activeView !== "home") {
+      setReadingOpen(false);
+      setCategoryOpen(false);
+    }
+  }, [activeView]);
   if (authUser.role === "admin") {
     return (
       <AdminRail
@@ -61,8 +68,20 @@ export function StoreRail({
   const chooseCategory = (id) => {
     setCategory?.(id);
     setSection?.("shelf");
+    setReadingOpen(true);
     setCategoryOpen(true);
     openHome();
+  };
+  const toggleReading = () => {
+    if (activeView !== "home") {
+      setReadingOpen(true);
+      openHome();
+      return;
+    }
+    setReadingOpen((open) => {
+      if (open) setCategoryOpen(false);
+      return !open;
+    });
   };
   const toggleAllShelf = () => {
     if (activeView === "home" && section === "shelf" && category === "all")
@@ -80,6 +99,8 @@ export function StoreRail({
         className="rail-brand brand-button"
         onClick={() => {
           setSection?.("overview");
+          setReadingOpen(true);
+          setCategoryOpen(false);
           openHome();
         }}
         aria-label="纸灯书店首页"
@@ -96,20 +117,22 @@ export function StoreRail({
         <span>满 99 元包邮</span>
         <small>48 小时内发货</small>
       </div>
-      <div className="rail-section rail-reading-section">
+      <div className="rail-scroll">
+        <div className="rail-section rail-reading-section">
         <div className="rail-section-title">
           <span>阅读空间</span>
           <small>EXPLORE</small>
         </div>
-        <button
-          className={activeView === "home" ? "rail-button rail-button-primary is-active" : "rail-button rail-button-primary"}
-          onClick={openHome}
-        >
-          <BookOpen size={16} />
-          <span>逛书架</span>
-          <ChevronDown className={`rail-caret ${activeView === "home" ? "is-open" : ""}`} size={14} />
-        </button>
-        <div className="rail-subgroup rail-subgroup-shelf" aria-label="书架入口">
+          <button
+            className={activeView === "home" ? "rail-button rail-button-primary is-active" : "rail-button rail-button-primary"}
+            onClick={toggleReading}
+            aria-expanded={readingOpen}
+          >
+            <BookOpen size={16} />
+            <span>逛书架</span>
+            <ChevronDown className={`rail-caret ${readingOpen ? "is-open" : ""}`} size={14} />
+          </button>
+          {readingOpen && <div className="rail-subgroup rail-subgroup-shelf" aria-label="书架入口">
           <button
             className={activeView === "home" && section === "overview" ? "rail-button is-active" : "rail-button"}
             onClick={() => { setSection?.("overview"); openHome(); }}
@@ -150,16 +173,16 @@ export function StoreRail({
               ))}
             </div>
           )}
+          </div>}
+          <button
+            className={activeView === "forum" ? "rail-button rail-button-primary is-active" : "rail-button rail-button-primary"}
+            onClick={() => onView("forum")}
+          >
+            <MessageCircle size={16} />
+            <span>书友论坛</span>
+          </button>
         </div>
-        <button
-          className={activeView === "forum" ? "rail-button rail-button-primary is-active" : "rail-button rail-button-primary"}
-          onClick={() => onView("forum")}
-        >
-          <MessageCircle size={16} />
-          <span>书友论坛</span>
-        </button>
-      </div>
-      <div className="rail-section rail-community-section">
+        <div className="rail-section rail-community-section">
         <div className="rail-section-title">
           <span>书友生活</span>
           <small>COMMUNITY</small>
@@ -182,8 +205,8 @@ export function StoreRail({
             <span>阅读榜单</span>
           </button>
         </div>
-      </div>
-      <div className="rail-section rail-account-section">
+        </div>
+        <div className="rail-section rail-account-section">
         <div className="rail-section-title">
           <span>个人服务</span>
           <small>YOUR SPACE</small>
@@ -208,8 +231,8 @@ export function StoreRail({
             </button>
           )}
         </div>
-      </div>
-      <div className="rail-tools">
+        </div>
+        <div className="rail-tools">
         <button onClick={onSearch} aria-label="搜索书籍">
           <Search size={15} />
           <span>搜索</span>
@@ -218,6 +241,7 @@ export function StoreRail({
           <ShoppingBag size={15} />
           <span>书袋 {cartCount ? `(${cartCount})` : ""}</span>
         </button>
+        </div>
       </div>
       <div className="rail-bottom">
         <div className="rail-user">
