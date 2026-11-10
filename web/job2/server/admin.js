@@ -138,10 +138,7 @@ export async function listAdminOrders() {
 }
 
 export async function updateOrderStatus(id, status) {
-  const [currentRows] = await query(
-    "SELECT id, user_id, status FROM orders WHERE id = ?",
-    [id],
-  );
+  const [currentRows] = await query("SELECT id, user_id, status FROM orders WHERE id = ?", [id]);
   const current = currentRows[0];
   if (!current) return null;
   await query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
@@ -251,9 +248,16 @@ export async function updateInventory(bookId, adminId, { stock, status, reason }
   const [rows] = await query("SELECT stock FROM books WHERE id = ?", [bookId]);
   if (!rows[0]) return null;
   const previous = Number(rows[0].stock || 0);
-  await query("UPDATE books SET stock = ?, inventory_status = ? WHERE id = ?", [nextStock, nextStatus, bookId]);
+  await query("UPDATE books SET stock = ?, inventory_status = ? WHERE id = ?", [
+    nextStock,
+    nextStatus,
+    bookId,
+  ]);
   if (previous !== nextStock)
-    await query("INSERT INTO inventory_logs (book_id, admin_id, delta, stock_after, reason) VALUES (?, ?, ?, ?, ?)", [bookId, adminId, nextStock - previous, nextStock, String(reason || "库存调整").trim()]);
+    await query(
+      "INSERT INTO inventory_logs (book_id, admin_id, delta, stock_after, reason) VALUES (?, ?, ?, ?, ?)",
+      [bookId, adminId, nextStock - previous, nextStock, String(reason || "库存调整").trim()],
+    );
   const inventory = await listInventory();
   return inventory.find((item) => item.id === Number(bookId));
 }

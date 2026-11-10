@@ -118,12 +118,16 @@ export function StoreRail({
       </div>
       <div className="rail-scroll">
         <div className="rail-section rail-reading-section">
-        <div className="rail-section-title">
-          <span>阅读空间</span>
-          <small>EXPLORE</small>
-        </div>
+          <div className="rail-section-title">
+            <span>阅读空间</span>
+            <small>EXPLORE</small>
+          </div>
           <button
-            className={activeView === "home" ? "rail-button rail-button-primary is-active" : "rail-button rail-button-primary"}
+            className={
+              activeView === "home"
+                ? "rail-button rail-button-primary is-active"
+                : "rail-button rail-button-primary"
+            }
             onClick={toggleReading}
             aria-expanded={readingOpen}
           >
@@ -131,50 +135,78 @@ export function StoreRail({
             <span>逛书架</span>
             <ChevronDown className={`rail-caret ${readingOpen ? "is-open" : ""}`} size={14} />
           </button>
-          {readingOpen && <div className="rail-subgroup rail-subgroup-shelf" aria-label="书架入口">
-          <button
-            className={activeView === "home" && section === "overview" ? "rail-button is-active" : "rail-button"}
-            onClick={() => { setSection?.("overview"); openHome(); }}
-          >
-            <Library size={15} />
-            <span>首页概览</span>
-          </button>
-          <button
-            className={activeView === "home" && section === "editor" ? "rail-button is-active" : "rail-button"}
-            onClick={() => { setSection?.("editor"); openHome(); }}
-          >
-            <Sparkles size={15} />
-            <span>编辑选书</span>
-            <b>本周</b>
-          </button>
-          <button
-            className={activeView === "home" && section === "shelf" && category === "all" ? "rail-button is-active" : "rail-button"}
-            onClick={toggleAllShelf}
-            aria-expanded={categoryOpen}
-          >
-            <BookOpen size={15} />
-            <span>全部书架</span>
-            <b>{categoryList[0].count}</b>
-            <ChevronDown className={`rail-caret ${categoryOpen ? "is-open" : ""}`} size={13} />
-          </button>
-          {categoryOpen && (
-            <div className="rail-subgroup rail-category-subgroup" aria-label="书架分类">
-              {categoryList.slice(1).map((item) => (
-                <button
-                  key={item.id}
-                  className={activeView === "home" && section === "shelf" && category === item.id ? "rail-button is-active" : "rail-button"}
-                  onClick={() => chooseCategory(item.id)}
-                >
-                  <span className="rail-dot"></span>
-                  <span>{item.label}</span>
-                  <b>{item.count}</b>
-                </button>
-              ))}
+          {readingOpen && (
+            <div className="rail-subgroup rail-subgroup-shelf" aria-label="书架入口">
+              <button
+                className={
+                  activeView === "home" && section === "overview"
+                    ? "rail-button is-active"
+                    : "rail-button"
+                }
+                onClick={() => {
+                  setSection?.("overview");
+                  openHome();
+                }}
+              >
+                <Library size={15} />
+                <span>首页概览</span>
+              </button>
+              <button
+                className={
+                  activeView === "home" && section === "editor"
+                    ? "rail-button is-active"
+                    : "rail-button"
+                }
+                onClick={() => {
+                  setSection?.("editor");
+                  openHome();
+                }}
+              >
+                <Sparkles size={15} />
+                <span>编辑选书</span>
+                <b>本周</b>
+              </button>
+              <button
+                className={
+                  activeView === "home" && section === "shelf" && category === "all"
+                    ? "rail-button is-active"
+                    : "rail-button"
+                }
+                onClick={toggleAllShelf}
+                aria-expanded={categoryOpen}
+              >
+                <BookOpen size={15} />
+                <span>全部书架</span>
+                <b>{categoryList[0].count}</b>
+                <ChevronDown className={`rail-caret ${categoryOpen ? "is-open" : ""}`} size={13} />
+              </button>
+              {categoryOpen && (
+                <div className="rail-subgroup rail-category-subgroup" aria-label="书架分类">
+                  {categoryList.slice(1).map((item) => (
+                    <button
+                      key={item.id}
+                      className={
+                        activeView === "home" && section === "shelf" && category === item.id
+                          ? "rail-button is-active"
+                          : "rail-button"
+                      }
+                      onClick={() => chooseCategory(item.id)}
+                    >
+                      <span className="rail-dot"></span>
+                      <span>{item.label}</span>
+                      <b>{item.count}</b>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-          </div>}
           <button
-            className={activeView === "forum" ? "rail-button rail-button-primary is-active" : "rail-button rail-button-primary"}
+            className={
+              activeView === "forum"
+                ? "rail-button rail-button-primary is-active"
+                : "rail-button rail-button-primary"
+            }
             onClick={() => onView("forum")}
           >
             <MessageCircle size={16} />
@@ -182,56 +214,98 @@ export function StoreRail({
           </button>
         </div>
         <div className="rail-section rail-community-section">
-        <div className="rail-section-title">
-          <span>书友生活</span>
-          <small>COMMUNITY</small>
-        </div>
-        <div className="rail-grid">
-          <button className={activeView === "secondhand" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("secondhand")}>
-            <ArrowLeftRight size={15} />
-            <span>二手书市</span>
-          </button>
-          <button className={activeView === "clubs" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("clubs")}>
-            <CalendarDays size={15} />
-            <span>读书会</span>
-          </button>
-          <button className={activeView === "growth" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("growth")}>
-            <Target size={15} />
-            <span>阅读成长</span>
-          </button>
-        </div>
+          <div className="rail-section-title">
+            <span>书友生活</span>
+            <small>COMMUNITY</small>
+          </div>
+          <div className="rail-grid">
+            <button
+              className={
+                activeView === "secondhand"
+                  ? "rail-button rail-grid-button is-active"
+                  : "rail-button rail-grid-button"
+              }
+              onClick={() => onView("secondhand")}
+            >
+              <ArrowLeftRight size={15} />
+              <span>二手书市</span>
+            </button>
+            <button
+              className={
+                activeView === "clubs"
+                  ? "rail-button rail-grid-button is-active"
+                  : "rail-button rail-grid-button"
+              }
+              onClick={() => onView("clubs")}
+            >
+              <CalendarDays size={15} />
+              <span>读书会</span>
+            </button>
+            <button
+              className={
+                activeView === "growth"
+                  ? "rail-button rail-grid-button is-active"
+                  : "rail-button rail-grid-button"
+              }
+              onClick={() => onView("growth")}
+            >
+              <Target size={15} />
+              <span>阅读成长</span>
+            </button>
+          </div>
         </div>
         <div className="rail-section rail-account-section">
-        <div className="rail-section-title">
-          <span>个人服务</span>
-          <small>YOUR SPACE</small>
-        </div>
-        <div className="rail-grid rail-grid-account">
-          <button className={activeView === "profile" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("profile")}>
-            <UserCircle size={15} />
-            <span>我的纸灯</span>
-          </button>
-          <button className={activeView === "analytics" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("analytics")}>
-            <BarChart3 size={15} />
-            <span>阅读数据</span>
-          </button>
-          {authUser.role === "admin" && (
-            <button className={activeView === "admin" ? "rail-button rail-grid-button is-active" : "rail-button rail-grid-button"} onClick={() => onView("admin")}>
-              <ShieldCheck size={15} />
-              <span>后台管理</span>
+          <div className="rail-section-title">
+            <span>个人服务</span>
+            <small>YOUR SPACE</small>
+          </div>
+          <div className="rail-grid rail-grid-account">
+            <button
+              className={
+                activeView === "profile"
+                  ? "rail-button rail-grid-button is-active"
+                  : "rail-button rail-grid-button"
+              }
+              onClick={() => onView("profile")}
+            >
+              <UserCircle size={15} />
+              <span>我的纸灯</span>
             </button>
-          )}
-        </div>
+            <button
+              className={
+                activeView === "analytics"
+                  ? "rail-button rail-grid-button is-active"
+                  : "rail-button rail-grid-button"
+              }
+              onClick={() => onView("analytics")}
+            >
+              <BarChart3 size={15} />
+              <span>阅读数据</span>
+            </button>
+            {authUser.role === "admin" && (
+              <button
+                className={
+                  activeView === "admin"
+                    ? "rail-button rail-grid-button is-active"
+                    : "rail-button rail-grid-button"
+                }
+                onClick={() => onView("admin")}
+              >
+                <ShieldCheck size={15} />
+                <span>后台管理</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className="rail-tools">
-        <button onClick={onSearch} aria-label="搜索书籍">
-          <Search size={15} />
-          <span>搜索</span>
-        </button>
-        <button onClick={onOpenBag} aria-label={`打开书袋，${cartCount}件商品`}>
-          <ShoppingBag size={15} />
-          <span>书袋 {cartCount ? `(${cartCount})` : ""}</span>
-        </button>
+          <button onClick={onSearch} aria-label="搜索书籍">
+            <Search size={15} />
+            <span>搜索</span>
+          </button>
+          <button onClick={onOpenBag} aria-label={`打开书袋，${cartCount}件商品`}>
+            <ShoppingBag size={15} />
+            <span>书袋 {cartCount ? `(${cartCount})` : ""}</span>
+          </button>
         </div>
       </div>
       <div className="rail-bottom">

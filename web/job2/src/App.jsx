@@ -255,7 +255,10 @@ const fallbackProfile = {
   ],
 };
 const dateText = (value) =>
-  new Date(value).toLocaleDateString("zh-CN", { month: "long", day: "numeric" });
+  new Date(value).toLocaleDateString("zh-CN", {
+    month: "long",
+    day: "numeric",
+  });
 const SESSION_TOKEN_KEY = "paper-lantern-token";
 const getSessionToken = () => window.sessionStorage.getItem(SESSION_TOKEN_KEY) || "";
 
@@ -280,7 +283,11 @@ function App() {
   const [bookCanReview, setBookCanReview] = useState(false);
   const [reviewSort, setReviewSort] = useState("recent");
   const [reviewComments, setReviewComments] = useState({});
-  const [reading, setReading] = useState({ shelves: { want: [], reading: [], read: [] }, history: [], stats: {} });
+  const [reading, setReading] = useState({
+    shelves: { want: [], reading: [], read: [] },
+    history: [],
+    stats: {},
+  });
   const [posts, setPosts] = useState(fallbackPosts);
   const [forumCategory, setForumCategory] = useState("全部");
   const [forumSearch, setForumSearch] = useState("");
@@ -344,8 +351,12 @@ function App() {
         .catch(() => setPosts(fallbackPosts));
     if (view === "profile")
       Promise.all([
-        fetch("/api/profile", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
-        fetch("/api/reading", { headers: authHeaders() }).then((res) => (res.ok ? res.json() : Promise.reject())),
+        fetch("/api/profile", { headers: authHeaders() }).then((res) =>
+          res.ok ? res.json() : Promise.reject(),
+        ),
+        fetch("/api/reading", { headers: authHeaders() }).then((res) =>
+          res.ok ? res.json() : Promise.reject(),
+        ),
       ])
         .then(([nextProfile, nextReading]) => {
           setProfile(nextProfile);
@@ -353,7 +364,11 @@ function App() {
         })
         .catch(() => {
           setProfile(fallbackProfile);
-          setReading({ shelves: { want: [], reading: [], read: [] }, history: [], stats: {} });
+          setReading({
+            shelves: { want: [], reading: [], read: [] },
+            history: [],
+            stats: {},
+          });
         });
     if (view === "secondhand")
       fetch("/api/secondhand", { headers: authHeaders() })
@@ -379,8 +394,14 @@ function App() {
         setGrowthRefreshing(true);
         try {
           const [nextChallenges, nextLeaderboard] = await Promise.all([
-            fetch("/api/challenges", { headers: authHeaders(), cache: "no-store" }).then((res) => (res.ok ? res.json() : Promise.reject())),
-            fetch("/api/reading/leaderboard", { headers: authHeaders(), cache: "no-store" }).then((res) => (res.ok ? res.json() : Promise.reject())),
+            fetch("/api/challenges", {
+              headers: authHeaders(),
+              cache: "no-store",
+            }).then((res) => (res.ok ? res.json() : Promise.reject())),
+            fetch("/api/reading/leaderboard", {
+              headers: authHeaders(),
+              cache: "no-store",
+            }).then((res) => (res.ok ? res.json() : Promise.reject())),
           ]);
           if (!cancelled) {
             setChallenges(nextChallenges);
@@ -421,31 +442,75 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   async function publishSecondhand(payload) {
-    const response = await fetch("/api/secondhand", { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(payload) });
-    if (response.ok) { const created = await response.json(); setSecondhand((current) => [created, ...current]); notify("二手书已发布"); }
-    else notify((await response.json().catch(() => ({}))).message || "发布失败");
+    const response = await fetch("/api/secondhand", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) {
+      const created = await response.json();
+      setSecondhand((current) => [created, ...current]);
+      notify("二手书已发布");
+    } else notify((await response.json().catch(() => ({}))).message || "发布失败");
   }
   async function buySecondhandListing(listing) {
-    const response = await fetch(`/api/secondhand/${listing.id}/buy`, { method: "POST", headers: authHeaders() });
-    if (response.ok) { const next = await response.json(); setSecondhand((current) => current.map((item) => item.id === next.id ? next : item)); notify("已锁定这本二手书，请联系卖家完成交接"); }
-    else notify((await response.json().catch(() => ({}))).message || "购买失败");
+    const response = await fetch(`/api/secondhand/${listing.id}/buy`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
+    if (response.ok) {
+      const next = await response.json();
+      setSecondhand((current) => current.map((item) => (item.id === next.id ? next : item)));
+      notify("已锁定这本二手书，请联系卖家完成交接");
+    } else notify((await response.json().catch(() => ({}))).message || "购买失败");
   }
   async function publishClub(payload) {
-    const response = await fetch("/api/clubs", { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(payload) });
-    if (response.ok) { const created = await response.json(); setClubs((current) => [...current, created].sort((a, b) => new Date(a.eventAt) - new Date(b.eventAt))); notify("读书会已创建"); }
-    else notify((await response.json().catch(() => ({}))).message || "创建失败");
+    const response = await fetch("/api/clubs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) {
+      const created = await response.json();
+      setClubs((current) =>
+        [...current, created].sort((a, b) => new Date(a.eventAt) - new Date(b.eventAt)),
+      );
+      notify("读书会已创建");
+    } else notify((await response.json().catch(() => ({}))).message || "创建失败");
   }
   async function toggleClub(club) {
-    const response = await fetch(`/api/clubs/${club.id}/join`, { method: "POST", headers: authHeaders() });
-    if (response.ok) { const next = await response.json(); setClubs((current) => current.map((item) => item.id === next.id ? next : item)); notify(next.joined ? "已报名读书会" : "已取消报名"); }
+    const response = await fetch(`/api/clubs/${club.id}/join`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
+    if (response.ok) {
+      const next = await response.json();
+      setClubs((current) => current.map((item) => (item.id === next.id ? next : item)));
+      notify(next.joined ? "已报名读书会" : "已取消报名");
+    }
   }
   async function toggleChallenge(challenge) {
-    const response = await fetch(`/api/challenges/${challenge.id}/join`, { method: "POST", headers: authHeaders() });
-    if (response.ok) { const next = await response.json(); setChallenges((current) => current.map((item) => item.id === next.id ? next : item)); notify("已加入阅读挑战"); }
+    const response = await fetch(`/api/challenges/${challenge.id}/join`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
+    if (response.ok) {
+      const next = await response.json();
+      setChallenges((current) => current.map((item) => (item.id === next.id ? next : item)));
+      notify("已加入阅读挑战");
+    }
   }
   async function saveChallengeProgress(challenge, payload) {
-    const response = await fetch(`/api/challenges/${challenge.id}/progress`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(payload) });
-    if (response.ok) { const next = await response.json(); setChallenges((current) => current.map((item) => item.id === next.id ? next : item)); notify("挑战进度已保存"); }
+    const response = await fetch(`/api/challenges/${challenge.id}/progress`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) {
+      const next = await response.json();
+      setChallenges((current) => current.map((item) => (item.id === next.id ? next : item)));
+      notify("挑战进度已保存");
+    }
   }
   function addToCart(book) {
     setCart((current) => {
@@ -473,8 +538,13 @@ function App() {
     try {
       const [reviewsResponse, permissionResponse, readingResponse] = await Promise.all([
         fetch(`/api/books/${book.id}/reviews?sort=${nextReviewSort}`),
-        fetch(`/api/books/${book.id}/review-permission`, { headers: authHeaders() }),
-        fetch(`/api/reading/${book.id}/history`, { method: "POST", headers: authHeaders() }),
+        fetch(`/api/books/${book.id}/review-permission`, {
+          headers: authHeaders(),
+        }),
+        fetch(`/api/reading/${book.id}/history`, {
+          method: "POST",
+          headers: authHeaders(),
+        }),
       ]);
       setBookReviews(reviewsResponse.ok ? await reviewsResponse.json() : []);
       setBookCanReview(permissionResponse.ok && (await permissionResponse.json()).canReview);
@@ -519,10 +589,17 @@ function App() {
     }
   }
   async function toggleReviewLike(reviewId) {
-    const response = await fetch(`/api/reviews/${reviewId}/like`, { method: "POST", headers: authHeaders() });
+    const response = await fetch(`/api/reviews/${reviewId}/like`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
     if (!response.ok) return;
     const data = await response.json();
-    setBookReviews((current) => current.map((review) => review.id === reviewId ? { ...review, helpful: data.helpful, liked: data.liked } : review));
+    setBookReviews((current) =>
+      current.map((review) =>
+        review.id === reviewId ? { ...review, helpful: data.helpful, liked: data.liked } : review,
+      ),
+    );
   }
   async function loadReviewComments(reviewId) {
     const response = await fetch(`/api/reviews/${reviewId}/comments`);
@@ -532,10 +609,17 @@ function App() {
     }
   }
   async function submitReviewComment(reviewId, content) {
-    const response = await fetch(`/api/reviews/${reviewId}/comments`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ content }) });
+    const response = await fetch(`/api/reviews/${reviewId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ content }),
+    });
     if (response.ok) {
       const comment = await response.json();
-      setReviewComments((current) => ({ ...current, [reviewId]: [...(current[reviewId] || []), comment] }));
+      setReviewComments((current) => ({
+        ...current,
+        [reviewId]: [...(current[reviewId] || []), comment],
+      }));
     }
   }
   async function submitPost(data) {
@@ -555,28 +639,46 @@ function App() {
     }
   }
   async function togglePostLike(post) {
-    const response = await fetch(`/api/forum/posts/${post.id}/like`, { method: "POST", headers: authHeaders() });
+    const response = await fetch(`/api/forum/posts/${post.id}/like`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
     if (!response.ok) return;
     const data = await response.json();
-    setPosts((current) => current.map((item) => item.id === post.id ? { ...item, likes: data.likes } : item));
+    setPosts((current) =>
+      current.map((item) => (item.id === post.id ? { ...item, likes: data.likes } : item)),
+    );
   }
   async function reportPost(post) {
     const reason = window.prompt("请填写举报原因", "内容与书友交流主题无关");
     if (!reason) return;
-    const response = await fetch(`/api/forum/posts/${post.id}/report`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ reason }) });
+    const response = await fetch(`/api/forum/posts/${post.id}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ reason }),
+    });
     if (response.ok) notify("举报已提交，管理员会尽快处理");
   }
   async function followAuthor(authorId) {
     if (!authorId) return;
-    const response = await fetch(`/api/users/${authorId}/follow`, { method: "POST", headers: authHeaders() });
+    const response = await fetch(`/api/users/${authorId}/follow`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
     if (response.ok) notify((await response.json()).following ? "已关注作者" : "已取消关注");
   }
   async function openUserProfile(userId) {
-    const response = await fetch(`/api/users/${userId}/profile`, { headers: authHeaders() });
+    const response = await fetch(`/api/users/${userId}/profile`, {
+      headers: authHeaders(),
+    });
     if (response.ok) setActiveUserProfile(await response.json());
   }
   async function updateReading(bookId, payload) {
-    const response = await fetch(`/api/reading/${bookId}`, { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(payload) });
+    const response = await fetch(`/api/reading/${bookId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
     if (response.ok) {
       setReading(await response.json());
       if (view === "growth") growthRefreshRef.current?.();
@@ -609,10 +711,17 @@ function App() {
     }
   }
   async function toggleCommentLike(commentId) {
-    const response = await fetch(`/api/forum/comments/${commentId}/like`, { method: "POST", headers: authHeaders() });
+    const response = await fetch(`/api/forum/comments/${commentId}/like`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
     if (!response.ok) return;
     const data = await response.json();
-    setPostComments((current) => current.map((comment) => comment.id === commentId ? { ...comment, likes: data.likes, liked: data.liked } : comment));
+    setPostComments((current) =>
+      current.map((comment) =>
+        comment.id === commentId ? { ...comment, likes: data.likes, liked: data.liked } : comment,
+      ),
+    );
   }
   function handleLogin(result) {
     window.sessionStorage.setItem(SESSION_TOKEN_KEY, result.token);
@@ -679,7 +788,10 @@ function App() {
     });
     if (res.ok) {
       const address = await res.json();
-      setProfile((current) => ({ ...current, addresses: [...current.addresses, address] }));
+      setProfile((current) => ({
+        ...current,
+        addresses: [...current.addresses, address],
+      }));
       setAddressOpen(false);
       notify("收货地址已保存");
     }
@@ -848,7 +960,11 @@ function App() {
           <StoreRail {...workspaceRailProps} />
           <section className="store-content workspace-content">
             <ProfileView
-              profile={{ ...profile, name: authUser.name, email: authUser.email }}
+              profile={{
+                ...profile,
+                name: authUser.name,
+                email: authUser.email,
+              }}
               books={books}
               tab={profileTab}
               setTab={setProfileTab}
@@ -865,25 +981,46 @@ function App() {
       {view === "secondhand" && (
         <main className="store-workspace workspace-page">
           <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><SecondhandView listings={secondhand} viewerId={authUser.id} onPublish={publishSecondhand} onBuy={buySecondhandListing} /></section>
+          <section className="store-content workspace-content">
+            <SecondhandView
+              listings={secondhand}
+              viewerId={authUser.id}
+              onPublish={publishSecondhand}
+              onBuy={buySecondhandListing}
+            />
+          </section>
         </main>
       )}
       {view === "clubs" && (
         <main className="store-workspace workspace-page">
           <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><ClubsView clubs={clubs} books={books} onCreate={publishClub} onToggle={toggleClub} /></section>
+          <section className="store-content workspace-content">
+            <ClubsView clubs={clubs} books={books} onCreate={publishClub} onToggle={toggleClub} />
+          </section>
         </main>
       )}
       {view === "growth" && (
         <main className="store-workspace workspace-page">
           <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><ReadingGrowthView challenges={challenges} leaderboard={leaderboard} onJoin={toggleChallenge} onSaveProgress={saveChallengeProgress} refreshing={growthRefreshing} updatedAt={growthUpdatedAt} onRefresh={() => growthRefreshRef.current?.()} /></section>
+          <section className="store-content workspace-content">
+            <ReadingGrowthView
+              challenges={challenges}
+              leaderboard={leaderboard}
+              onJoin={toggleChallenge}
+              onSaveProgress={saveChallengeProgress}
+              refreshing={growthRefreshing}
+              updatedAt={growthUpdatedAt}
+              onRefresh={() => growthRefreshRef.current?.()}
+            />
+          </section>
         </main>
       )}
       {view === "analytics" && (
         <main className="store-workspace workspace-page">
           <StoreRail {...workspaceRailProps} />
-          <section className="store-content workspace-content"><ReaderAnalyticsView analytics={analytics} /></section>
+          <section className="store-content workspace-content">
+            <ReaderAnalyticsView analytics={analytics} />
+          </section>
         </main>
       )}
       <footer>
@@ -977,7 +1114,12 @@ function App() {
       )}
       {postOpen && <NewPostModal onClose={() => setPostOpen(false)} onSubmit={submitPost} />}
       {activeUserProfile && (
-        <UserProfileModal profile={activeUserProfile} onClose={() => setActiveUserProfile(null)} onFollow={() => followAuthor(activeUserProfile.id)} onOpenPost={openPost} />
+        <UserProfileModal
+          profile={activeUserProfile}
+          onClose={() => setActiveUserProfile(null)}
+          onFollow={() => followAuthor(activeUserProfile.id)}
+          onOpenPost={openPost}
+        />
       )}
       {profileEditOpen && (
         <ProfileEditModal
@@ -1013,7 +1155,11 @@ function LoginPage({ onLogin }) {
   function chooseRole(next) {
     setRole(next);
     if (mode === "login")
-      setForm((current) => ({ ...current, email: demos[next][0], password: demos[next][1] }));
+      setForm((current) => ({
+        ...current,
+        email: demos[next][0],
+        password: demos[next][1],
+      }));
   }
   async function submit(event) {
     event.preventDefault();
@@ -1502,7 +1648,10 @@ function AdminView({ authUser, tab, onTabChange }) {
             method: "PATCH",
             body: JSON.stringify(bookForm),
           })
-        : await adminFetch("/api/admin/books", { method: "POST", body: JSON.stringify(bookForm) });
+        : await adminFetch("/api/admin/books", {
+            method: "POST",
+            body: JSON.stringify(bookForm),
+          });
       setBooks((current) =>
         bookForm.id
           ? current.map((book) => (book.id === data.id ? data : book))
@@ -1548,9 +1697,16 @@ function AdminView({ authUser, tab, onTabChange }) {
   };
   const togglePostPin = async (post) => {
     try {
-      const data = await adminFetch(`/api/admin/posts/${post.id}/pin`, { method: "PATCH", body: JSON.stringify({ pinned: !post.pinned }) });
-      setPosts((current) => current.map((item) => item.id === post.id ? { ...item, pinned: data.pinned } : item));
-    } catch (err) { setError(err.message || "帖子置顶更新失败"); }
+      const data = await adminFetch(`/api/admin/posts/${post.id}/pin`, {
+        method: "PATCH",
+        body: JSON.stringify({ pinned: !post.pinned }),
+      });
+      setPosts((current) =>
+        current.map((item) => (item.id === post.id ? { ...item, pinned: data.pinned } : item)),
+      );
+    } catch (err) {
+      setError(err.message || "帖子置顶更新失败");
+    }
   };
   const removeReview = async (review) => {
     if (!window.confirm("确定删除这条评论吗？")) return;
@@ -1563,8 +1719,11 @@ function AdminView({ authUser, tab, onTabChange }) {
   };
   const saveInventory = async (item, payload) => {
     try {
-      const next = await adminFetch(`/api/admin/inventory/${item.id}`, { method: "PATCH", body: JSON.stringify(payload) });
-      setInventory((current) => current.map((entry) => entry.id === next.id ? next : entry));
+      const next = await adminFetch(`/api/admin/inventory/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      setInventory((current) => current.map((entry) => (entry.id === next.id ? next : entry)));
     } catch (err) {
       setError(err.message || "库存更新失败");
     }
@@ -1665,7 +1824,10 @@ function AdminView({ authUser, tab, onTabChange }) {
                       step={field === "rating" ? "0.1" : "1"}
                       value={bookForm[field]}
                       onChange={(event) =>
-                        setBookForm({ ...bookForm, [field]: event.target.value })
+                        setBookForm({
+                          ...bookForm,
+                          [field]: event.target.value,
+                        })
                       }
                     />
                   </label>
@@ -1695,7 +1857,11 @@ function AdminView({ authUser, tab, onTabChange }) {
                         return;
                       }
                       const reader = new FileReader();
-                      reader.onload = () => setBookForm((current) => ({ ...current, coverData: String(reader.result || "") }));
+                      reader.onload = () =>
+                        setBookForm((current) => ({
+                          ...current,
+                          coverData: String(reader.result || ""),
+                        }));
                       reader.readAsDataURL(file);
                     }}
                   />
@@ -1707,7 +1873,10 @@ function AdminView({ authUser, tab, onTabChange }) {
                     required
                     value={bookForm.description}
                     onChange={(event) =>
-                      setBookForm({ ...bookForm, description: event.target.value })
+                      setBookForm({
+                        ...bookForm,
+                        description: event.target.value,
+                      })
                     }
                     rows="3"
                   />
@@ -1893,7 +2062,14 @@ function AdminCommunity({ posts, reviews, onRemovePost, onRemoveReview, onToggle
                   {post.author} · {post.category} · {post.likes} 赞 · {post.comments} 回复
                 </small>
               </div>
-              <div className="admin-content-actions"><button className="admin-text-button" onClick={() => onTogglePin(post)}>{post.pinned ? "取消置顶" : "置顶"}</button><button className="admin-icon-button danger" onClick={() => onRemovePost(post)}><Trash2 size={15} /></button></div>
+              <div className="admin-content-actions">
+                <button className="admin-text-button" onClick={() => onTogglePin(post)}>
+                  {post.pinned ? "取消置顶" : "置顶"}
+                </button>
+                <button className="admin-icon-button danger" onClick={() => onRemovePost(post)}>
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </article>
           ))}
         </div>
@@ -1921,71 +2097,872 @@ function AdminCommunity({ posts, reviews, onRemovePost, onRemoveReview, onToggle
 }
 
 function FeatureHeader({ eyebrow, title, description, action }) {
-  return <div className="feature-head"><div><span className="section-kicker">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>{action}</div>;
+  return (
+    <div className="feature-head">
+      <div>
+        <span className="section-kicker">{eyebrow}</span>
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
+      {action}
+    </div>
+  );
 }
 
 function SecondhandView({ listings, viewerId, onPublish, onBuy }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", author: "", condition: "九成新", price: "", description: "", cover: "", coverData: "" });
-  const submit = (event) => { event.preventDefault(); onPublish(form); setForm({ title: "", author: "", condition: "九成新", price: "", description: "", cover: "", coverData: "" }); setOpen(false); };
-  return <main className="feature-page container">
-    <FeatureHeader eyebrow="SECONDHAND BOOK MARKET" title="二手书市" description="让读完的书继续流动，和书友交换下一段阅读。" action={<button className="button button-dark" onClick={() => setOpen(true)}><Plus size={15} /> 发布闲置书</button>} />
-    <div className="feature-note"><ArrowLeftRight size={18} /><span>真实交易状态来自 MySQL；购买后会锁定商品，双方可通过站内联系方式完成交接。</span></div>
-    <div className="feature-grid secondhand-grid">{listings.map((item) => <article className="feature-card secondhand-card" key={item.id}>
-      {item.cover ? <img src={item.cover} alt="" /> : <div className="feature-cover"><BookOpen size={24} /></div>}
-      <div className="feature-card-body"><div className="feature-card-top"><span className="status-pill">{item.condition}</span><span className={`status-pill ${item.status === "active" ? "status-active" : "status-muted"}`}>{item.status === "active" ? "在售" : "已售出"}</span></div><h3>{item.title}</h3><p className="muted-label">{item.author} · 卖家 {item.seller}</p><p>{item.description || "书友留下的阅读痕迹，等待下一位读者。"}</p><div className="feature-card-bottom"><strong>¥{item.price.toFixed(2)}</strong>{item.status === "active" && item.sellerId !== viewerId ? <button className="button button-outline" onClick={() => onBuy(item)}>联系购买</button> : <span className="muted-label">{item.sellerId === viewerId ? "我的发布" : "交易完成"}</span>}</div></div>
-    </article>)}{!listings.length && <div className="empty-state"><ArrowLeftRight size={28} /><h3>还没有二手书</h3><p>发布第一本闲置书，让它遇到下一位读者。</p></div>}</div>
-    {open && <div className="overlay" onClick={() => setOpen(false)}><div className="form-modal" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><span className="section-kicker">SECONDHAND</span><h2>发布闲置书</h2></div><button className="icon-button" onClick={() => setOpen(false)}><X size={20} /></button></div><form className="modal-form" onSubmit={submit}><label>书名<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>作者<input required value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} /></label><label>成色<select value={form.condition} onChange={(e) => setForm({ ...form, condition: e.target.value })}><option>全新</option><option>九成新</option><option>八成新</option><option>有明显阅读痕迹</option></select></label><label>价格<input required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></label><label>封面地址<input value={form.cover} onChange={(e) => setForm({ ...form, cover: e.target.value })} placeholder="可选" /></label><label>上传封面图片<input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (!file || file.size > 3 * 1024 * 1024) return; const reader = new FileReader(); reader.onload = () => setForm((current) => ({ ...current, coverData: String(reader.result || "") })); reader.readAsDataURL(file); }} /><small className="field-hint">支持 JPG、PNG，图片会保存到 MySQL</small></label><label>说明<textarea rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="购买渠道、批注情况等" /></label><button className="button button-dark button-wide">发布二手书</button></form></div></div>}
-  </main>;
+  const [form, setForm] = useState({
+    title: "",
+    author: "",
+    condition: "九成新",
+    price: "",
+    description: "",
+    cover: "",
+    coverData: "",
+  });
+  const submit = (event) => {
+    event.preventDefault();
+    onPublish(form);
+    setForm({
+      title: "",
+      author: "",
+      condition: "九成新",
+      price: "",
+      description: "",
+      cover: "",
+      coverData: "",
+    });
+    setOpen(false);
+  };
+  return (
+    <main className="feature-page container">
+      <FeatureHeader
+        eyebrow="SECONDHAND BOOK MARKET"
+        title="二手书市"
+        description="让读完的书继续流动，和书友交换下一段阅读。"
+        action={
+          <button className="button button-dark" onClick={() => setOpen(true)}>
+            <Plus size={15} /> 发布闲置书
+          </button>
+        }
+      />
+      <div className="feature-note">
+        <ArrowLeftRight size={18} />
+        <span>真实交易状态来自 MySQL；购买后会锁定商品，双方可通过站内联系方式完成交接。</span>
+      </div>
+      <div className="feature-grid secondhand-grid">
+        {listings.map((item) => (
+          <article className="feature-card secondhand-card" key={item.id}>
+            {item.cover ? (
+              <img src={item.cover} alt="" />
+            ) : (
+              <div className="feature-cover">
+                <BookOpen size={24} />
+              </div>
+            )}
+            <div className="feature-card-body">
+              <div className="feature-card-top">
+                <span className="status-pill">{item.condition}</span>
+                <span
+                  className={`status-pill ${item.status === "active" ? "status-active" : "status-muted"}`}
+                >
+                  {item.status === "active" ? "在售" : "已售出"}
+                </span>
+              </div>
+              <h3>{item.title}</h3>
+              <p className="muted-label">
+                {item.author} · 卖家 {item.seller}
+              </p>
+              <p>{item.description || "书友留下的阅读痕迹，等待下一位读者。"}</p>
+              <div className="feature-card-bottom">
+                <strong>¥{item.price.toFixed(2)}</strong>
+                {item.status === "active" && item.sellerId !== viewerId ? (
+                  <button className="button button-outline" onClick={() => onBuy(item)}>
+                    联系购买
+                  </button>
+                ) : (
+                  <span className="muted-label">
+                    {item.sellerId === viewerId ? "我的发布" : "交易完成"}
+                  </span>
+                )}
+              </div>
+            </div>
+          </article>
+        ))}
+        {!listings.length && (
+          <div className="empty-state">
+            <ArrowLeftRight size={28} />
+            <h3>还没有二手书</h3>
+            <p>发布第一本闲置书，让它遇到下一位读者。</p>
+          </div>
+        )}
+      </div>
+      {open && (
+        <div className="overlay" onClick={() => setOpen(false)}>
+          <div className="form-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="drawer-head">
+              <div>
+                <span className="section-kicker">SECONDHAND</span>
+                <h2>发布闲置书</h2>
+              </div>
+              <button className="icon-button" onClick={() => setOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <form className="modal-form" onSubmit={submit}>
+              <label>
+                书名
+                <input
+                  required
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+              </label>
+              <label>
+                作者
+                <input
+                  required
+                  value={form.author}
+                  onChange={(e) => setForm({ ...form, author: e.target.value })}
+                />
+              </label>
+              <label>
+                成色
+                <select
+                  value={form.condition}
+                  onChange={(e) => setForm({ ...form, condition: e.target.value })}
+                >
+                  <option>全新</option>
+                  <option>九成新</option>
+                  <option>八成新</option>
+                  <option>有明显阅读痕迹</option>
+                </select>
+              </label>
+              <label>
+                价格
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                />
+              </label>
+              <label>
+                封面地址
+                <input
+                  value={form.cover}
+                  onChange={(e) => setForm({ ...form, cover: e.target.value })}
+                  placeholder="可选"
+                />
+              </label>
+              <label>
+                上传封面图片
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || file.size > 3 * 1024 * 1024) return;
+                    const reader = new FileReader();
+                    reader.onload = () =>
+                      setForm((current) => ({
+                        ...current,
+                        coverData: String(reader.result || ""),
+                      }));
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                <small className="field-hint">支持 JPG、PNG，图片会保存到 MySQL</small>
+              </label>
+              <label>
+                说明
+                <textarea
+                  rows="3"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="购买渠道、批注情况等"
+                />
+              </label>
+              <button className="button button-dark button-wide">发布二手书</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </main>
+  );
 }
 
 function ClubsView({ clubs, books, onCreate, onToggle }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", bookId: "", eventAt: "", location: "线上", capacity: 20, coverData: "" });
-  const submit = (event) => { event.preventDefault(); onCreate(form); setForm({ title: "", description: "", bookId: "", eventAt: "", location: "线上", capacity: 20, coverData: "" }); setOpen(false); };
-  return <main className="feature-page container"><FeatureHeader eyebrow="BOOK CLUB EVENTS" title="读书会活动" description="线上共读、线下见面，把书里的问题带到真实对话里。" action={<button className="button button-dark" onClick={() => setOpen(true)}><Plus size={15} /> 发起读书会</button>} /><div className="feature-grid">{clubs.map((club) => <article className="feature-card club-card" key={club.id}>{club.image && <img className="club-cover" src={club.image} alt="活动封面" />}<div className="club-date"><CalendarDays size={20} /><strong>{new Date(club.eventAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric" })}</strong><span>{new Date(club.eventAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</span></div><div className="feature-card-body"><span className="section-kicker">{club.location}</span><h3>{club.title}</h3><p>{club.description}</p><div className="club-meta"><span><BookMarked size={14} /> {club.bookTitle}</span><span><Users size={14} /> {club.memberCount}/{club.capacity}</span><span>发起人 {club.host}</span></div><button className={`button ${club.joined ? "button-outline" : "button-dark"}`} onClick={() => onToggle(club)}>{club.joined ? <><CheckCircle2 size={15} /> 已报名</> : "报名参加"}</button></div></article>)}{!clubs.length && <div className="empty-state"><CalendarDays size={28} /><h3>暂时没有活动</h3><p>发起一场共读，邀请书友一起开始。</p></div>}</div>{open && <div className="overlay" onClick={() => setOpen(false)}><div className="form-modal" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><span className="section-kicker">BOOK CLUB</span><h2>发起读书会</h2></div><button className="icon-button" onClick={() => setOpen(false)}><X size={20} /></button></div><form className="modal-form" onSubmit={submit}><label>活动标题<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label><label>共读书籍<select value={form.bookId} onChange={(e) => setForm({ ...form, bookId: e.target.value })}><option value="">自由选书</option>{books.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}</select></label><label>活动时间<input required type="datetime-local" value={form.eventAt} onChange={(e) => setForm({ ...form, eventAt: e.target.value })} /></label><label>地点或会议链接<input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></label><label>人数上限<input type="number" min="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} /></label><label>上传活动图片<input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (!file || file.size > 3 * 1024 * 1024) return; const reader = new FileReader(); reader.onload = () => setForm((current) => ({ ...current, coverData: String(reader.result || "") })); reader.readAsDataURL(file); }} /><small className="field-hint">支持 JPG、PNG，最大 3MB</small></label><label>活动介绍<textarea required rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label><button className="button button-dark button-wide">发布活动</button></form></div></div>}</main>;
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    bookId: "",
+    eventAt: "",
+    location: "线上",
+    capacity: 20,
+    coverData: "",
+  });
+  const submit = (event) => {
+    event.preventDefault();
+    onCreate(form);
+    setForm({
+      title: "",
+      description: "",
+      bookId: "",
+      eventAt: "",
+      location: "线上",
+      capacity: 20,
+      coverData: "",
+    });
+    setOpen(false);
+  };
+  return (
+    <main className="feature-page container">
+      <FeatureHeader
+        eyebrow="BOOK CLUB EVENTS"
+        title="读书会活动"
+        description="线上共读、线下见面，把书里的问题带到真实对话里。"
+        action={
+          <button className="button button-dark" onClick={() => setOpen(true)}>
+            <Plus size={15} /> 发起读书会
+          </button>
+        }
+      />
+      <div className="feature-grid">
+        {clubs.map((club) => (
+          <article className="feature-card club-card" key={club.id}>
+            {club.image && <img className="club-cover" src={club.image} alt="活动封面" />}
+            <div className="club-date">
+              <CalendarDays size={20} />
+              <strong>
+                {new Date(club.eventAt).toLocaleDateString("zh-CN", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </strong>
+              <span>
+                {new Date(club.eventAt).toLocaleTimeString("zh-CN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+            <div className="feature-card-body">
+              <span className="section-kicker">{club.location}</span>
+              <h3>{club.title}</h3>
+              <p>{club.description}</p>
+              <div className="club-meta">
+                <span>
+                  <BookMarked size={14} /> {club.bookTitle}
+                </span>
+                <span>
+                  <Users size={14} /> {club.memberCount}/{club.capacity}
+                </span>
+                <span>发起人 {club.host}</span>
+              </div>
+              <button
+                className={`button ${club.joined ? "button-outline" : "button-dark"}`}
+                onClick={() => onToggle(club)}
+              >
+                {club.joined ? (
+                  <>
+                    <CheckCircle2 size={15} /> 已报名
+                  </>
+                ) : (
+                  "报名参加"
+                )}
+              </button>
+            </div>
+          </article>
+        ))}
+        {!clubs.length && (
+          <div className="empty-state">
+            <CalendarDays size={28} />
+            <h3>暂时没有活动</h3>
+            <p>发起一场共读，邀请书友一起开始。</p>
+          </div>
+        )}
+      </div>
+      {open && (
+        <div className="overlay" onClick={() => setOpen(false)}>
+          <div className="form-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="drawer-head">
+              <div>
+                <span className="section-kicker">BOOK CLUB</span>
+                <h2>发起读书会</h2>
+              </div>
+              <button className="icon-button" onClick={() => setOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <form className="modal-form" onSubmit={submit}>
+              <label>
+                活动标题
+                <input
+                  required
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+              </label>
+              <label>
+                共读书籍
+                <select
+                  value={form.bookId}
+                  onChange={(e) => setForm({ ...form, bookId: e.target.value })}
+                >
+                  <option value="">自由选书</option>
+                  {books.map((book) => (
+                    <option key={book.id} value={book.id}>
+                      {book.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                活动时间
+                <input
+                  required
+                  type="datetime-local"
+                  value={form.eventAt}
+                  onChange={(e) => setForm({ ...form, eventAt: e.target.value })}
+                />
+              </label>
+              <label>
+                地点或会议链接
+                <input
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                />
+              </label>
+              <label>
+                人数上限
+                <input
+                  type="number"
+                  min="1"
+                  value={form.capacity}
+                  onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+                />
+              </label>
+              <label>
+                上传活动图片
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || file.size > 3 * 1024 * 1024) return;
+                    const reader = new FileReader();
+                    reader.onload = () =>
+                      setForm((current) => ({
+                        ...current,
+                        coverData: String(reader.result || ""),
+                      }));
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                <small className="field-hint">支持 JPG、PNG，最大 3MB</small>
+              </label>
+              <label>
+                活动介绍
+                <textarea
+                  required
+                  rows="3"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
+              </label>
+              <button className="button button-dark button-wide">发布活动</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </main>
+  );
 }
 
-function ReadingGrowthView({ challenges, leaderboard, onJoin, onSaveProgress, refreshing, updatedAt, onRefresh }) {
+function ReadingGrowthView({
+  challenges,
+  leaderboard,
+  onJoin,
+  onSaveProgress,
+  refreshing,
+  updatedAt,
+  onRefresh,
+}) {
   const [tab, setTab] = useState("challenge");
-  const updatedText = updatedAt ? `更新于 ${new Date(updatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : "正在同步数据";
-  return <main className="feature-page container"><FeatureHeader eyebrow="READING GROWTH" title="阅读成长" description="用挑战建立阅读节奏，再用榜单看看自己和书友走了多远。" action={<div className="growth-sync-actions"><span className="muted-label">{updatedText}</span><button className="button button-outline" onClick={onRefresh} disabled={refreshing}><RefreshCw size={15} /> {refreshing ? "同步中" : "刷新数据"}</button></div>} /><div className="growth-tabs"><button className={tab === "challenge" ? "is-active" : ""} onClick={() => setTab("challenge")}><Target size={15} /> 挑战进度</button><button className={tab === "leaderboard" ? "is-active" : ""} onClick={() => setTab("leaderboard")}><Trophy size={15} /> 阅读榜单</button></div>{tab === "challenge" ? <ChallengesPanel challenges={challenges} onJoin={onJoin} onSaveProgress={onSaveProgress} /> : <LeaderboardPanel leaderboard={leaderboard} />}</main>;
+  const updatedText = updatedAt
+    ? `更新于 ${new Date(updatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+    : "正在同步数据";
+  return (
+    <main className="feature-page container">
+      <FeatureHeader
+        eyebrow="READING GROWTH"
+        title="阅读成长"
+        description="用挑战建立阅读节奏，再用榜单看看自己和书友走了多远。"
+        action={
+          <div className="growth-sync-actions">
+            <span className="muted-label">{updatedText}</span>
+            <button className="button button-outline" onClick={onRefresh} disabled={refreshing}>
+              <RefreshCw size={15} /> {refreshing ? "同步中" : "刷新数据"}
+            </button>
+          </div>
+        }
+      />
+      <div className="growth-tabs">
+        <button
+          className={tab === "challenge" ? "is-active" : ""}
+          onClick={() => setTab("challenge")}
+        >
+          <Target size={15} /> 挑战进度
+        </button>
+        <button
+          className={tab === "leaderboard" ? "is-active" : ""}
+          onClick={() => setTab("leaderboard")}
+        >
+          <Trophy size={15} /> 阅读榜单
+        </button>
+      </div>
+      {tab === "challenge" ? (
+        <ChallengesPanel challenges={challenges} onJoin={onJoin} onSaveProgress={onSaveProgress} />
+      ) : (
+        <LeaderboardPanel leaderboard={leaderboard} />
+      )}
+    </main>
+  );
 }
 
 function ChallengesPanel({ challenges, onJoin, onSaveProgress }) {
-  return <section className="growth-panel"><div className="feature-grid challenge-grid">{challenges.map((challenge) => { const bookRate = challenge.targetBooks ? Math.min(100, challenge.booksCompleted / challenge.targetBooks * 100) : 0; const minuteRate = challenge.targetMinutes ? Math.min(100, challenge.minutes / challenge.targetMinutes * 100) : 0; return <article className="feature-card challenge-card" key={challenge.id}><div className="challenge-icon"><Trophy size={23} /></div><div className="feature-card-body"><span className="section-kicker">{challenge.startDate} — {challenge.endDate}</span><h3>{challenge.title}</h3><p>{challenge.description}</p><div className="challenge-progress"><div><span>完成书籍 {challenge.booksCompleted}/{challenge.targetBooks}</span><b>{Math.round(bookRate)}%</b></div><i><b style={{ width: `${bookRate}%` }} /></i><div><span>阅读时长 {challenge.minutes}/{challenge.targetMinutes} 分钟</span><b>{Math.round(minuteRate)}%</b></div><i><b style={{ width: `${minuteRate}%` }} /></i></div><div className="challenge-actions">{!challenge.joined ? <button className="button button-dark" onClick={() => onJoin(challenge)}><Target size={15} /> 加入挑战</button> : <ChallengeProgressForm challenge={challenge} onSave={onSaveProgress} />}</div></div></article>; })}{!challenges.length && <div className="empty-state"><Trophy size={28} /><h3>暂无进行中的挑战</h3><p>管理员发布挑战后，会在这里显示。</p></div>}</div></section>;
+  return (
+    <section className="growth-panel">
+      <div className="feature-grid challenge-grid">
+        {challenges.map((challenge) => {
+          const bookRate = challenge.targetBooks
+            ? Math.min(100, (challenge.booksCompleted / challenge.targetBooks) * 100)
+            : 0;
+          const minuteRate = challenge.targetMinutes
+            ? Math.min(100, (challenge.minutes / challenge.targetMinutes) * 100)
+            : 0;
+          return (
+            <article className="feature-card challenge-card" key={challenge.id}>
+              <div className="challenge-icon">
+                <Trophy size={23} />
+              </div>
+              <div className="feature-card-body">
+                <span className="section-kicker">
+                  {challenge.startDate} — {challenge.endDate}
+                </span>
+                <h3>{challenge.title}</h3>
+                <p>{challenge.description}</p>
+                <div className="challenge-progress">
+                  <div>
+                    <span>
+                      完成书籍 {challenge.booksCompleted}/{challenge.targetBooks}
+                    </span>
+                    <b>{Math.round(bookRate)}%</b>
+                  </div>
+                  <i>
+                    <b style={{ width: `${bookRate}%` }} />
+                  </i>
+                  <div>
+                    <span>
+                      阅读时长 {challenge.minutes}/{challenge.targetMinutes} 分钟
+                    </span>
+                    <b>{Math.round(minuteRate)}%</b>
+                  </div>
+                  <i>
+                    <b style={{ width: `${minuteRate}%` }} />
+                  </i>
+                </div>
+                <div className="challenge-actions">
+                  {!challenge.joined ? (
+                    <button className="button button-dark" onClick={() => onJoin(challenge)}>
+                      <Target size={15} /> 加入挑战
+                    </button>
+                  ) : (
+                    <ChallengeProgressForm challenge={challenge} onSave={onSaveProgress} />
+                  )}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+        {!challenges.length && (
+          <div className="empty-state">
+            <Trophy size={28} />
+            <h3>暂无进行中的挑战</h3>
+            <p>管理员发布挑战后，会在这里显示。</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 function ChallengeProgressForm({ challenge, onSave }) {
-  const [books, setBooks] = useState(challenge.booksCompleted); const [minutes, setMinutes] = useState(challenge.minutes);
-  return <form className="challenge-form" onSubmit={(e) => { e.preventDefault(); onSave(challenge, { booksCompleted: books, minutes }); }}><label>已完成书籍<input type="number" min="0" value={books} onChange={(e) => setBooks(e.target.value)} /></label><label>阅读分钟<input type="number" min="0" value={minutes} onChange={(e) => setMinutes(e.target.value)} /></label><button className="button button-outline"><Check size={14} /> 保存进度</button></form>;
+  const [books, setBooks] = useState(challenge.booksCompleted);
+  const [minutes, setMinutes] = useState(challenge.minutes);
+  return (
+    <form
+      className="challenge-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(challenge, { booksCompleted: books, minutes });
+      }}
+    >
+      <label>
+        已完成书籍
+        <input type="number" min="0" value={books} onChange={(e) => setBooks(e.target.value)} />
+      </label>
+      <label>
+        阅读分钟
+        <input type="number" min="0" value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+      </label>
+      <button className="button button-outline">
+        <Check size={14} /> 保存进度
+      </button>
+    </form>
+  );
 }
 
 function ReaderAnalyticsView({ analytics }) {
-  if (!analytics) return <main className="feature-page container"><div className="empty-state"><BarChart3 size={28} /><h3>暂无阅读数据</h3><p>浏览和阅读几本书后，这里会生成你的数据。</p></div></main>;
+  if (!analytics)
+    return (
+      <main className="feature-page container">
+        <div className="empty-state">
+          <BarChart3 size={28} />
+          <h3>暂无阅读数据</h3>
+          <p>浏览和阅读几本书后，这里会生成你的数据。</p>
+        </div>
+      </main>
+    );
   const maxCategory = Math.max(...analytics.categories.map((item) => item.count), 1);
-  return <main className="feature-page container"><FeatureHeader eyebrow="MY READING DATA" title="我的数据" description="把阅读时间、书目偏好和年度目标放在一张清晰的图表里。" /><div className="analytics-stat-grid"><div><Clock3 size={18} /><span>阅读分钟</span><strong>{analytics.summary.minutes}</strong></div><div><BookOpenCheck size={18} /><span>读完书籍</span><strong>{analytics.summary.finished}</strong></div><div><Library size={18} /><span>收录书籍</span><strong>{analytics.summary.books}</strong></div><div><ShoppingBag size={18} /><span>购书消费</span><strong>¥{analytics.summary.spending.toFixed(2)}</strong></div></div><div className="analytics-grid"><section className="feature-card"><div className="content-heading"><div><span className="section-kicker">阅读偏好</span><h2>我在读什么</h2></div></div>{analytics.categories.length ? analytics.categories.map((item) => <div className="bar-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.count / maxCategory * 100}%` }} /></i><strong>{item.count}</strong></div>) : <p className="muted-label">还没有足够的书架数据。</p>}</section><section className="feature-card"><div className="content-heading"><div><span className="section-kicker">最近六个月</span><h2>浏览趋势</h2></div></div><div className="month-bars">{analytics.monthly.length ? analytics.monthly.slice().reverse().map((item) => <div key={item.month}><b style={{ height: `${Math.max(12, item.count * 18)}px` }} /><span>{item.month.slice(5)}</span></div>) : <p className="muted-label">还没有浏览记录。</p>}</div></section></div></main>;
+  return (
+    <main className="feature-page container">
+      <FeatureHeader
+        eyebrow="MY READING DATA"
+        title="我的数据"
+        description="把阅读时间、书目偏好和年度目标放在一张清晰的图表里。"
+      />
+      <div className="analytics-stat-grid">
+        <div>
+          <Clock3 size={18} />
+          <span>阅读分钟</span>
+          <strong>{analytics.summary.minutes}</strong>
+        </div>
+        <div>
+          <BookOpenCheck size={18} />
+          <span>读完书籍</span>
+          <strong>{analytics.summary.finished}</strong>
+        </div>
+        <div>
+          <Library size={18} />
+          <span>收录书籍</span>
+          <strong>{analytics.summary.books}</strong>
+        </div>
+        <div>
+          <ShoppingBag size={18} />
+          <span>购书消费</span>
+          <strong>¥{analytics.summary.spending.toFixed(2)}</strong>
+        </div>
+      </div>
+      <div className="analytics-grid">
+        <section className="feature-card">
+          <div className="content-heading">
+            <div>
+              <span className="section-kicker">阅读偏好</span>
+              <h2>我在读什么</h2>
+            </div>
+          </div>
+          {analytics.categories.length ? (
+            analytics.categories.map((item) => (
+              <div className="bar-row" key={item.label}>
+                <span>{item.label}</span>
+                <i>
+                  <b style={{ width: `${(item.count / maxCategory) * 100}%` }} />
+                </i>
+                <strong>{item.count}</strong>
+              </div>
+            ))
+          ) : (
+            <p className="muted-label">还没有足够的书架数据。</p>
+          )}
+        </section>
+        <section className="feature-card">
+          <div className="content-heading">
+            <div>
+              <span className="section-kicker">最近六个月</span>
+              <h2>浏览趋势</h2>
+            </div>
+          </div>
+          <div className="month-bars">
+            {analytics.monthly.length ? (
+              analytics.monthly
+                .slice()
+                .reverse()
+                .map((item) => (
+                  <div key={item.month}>
+                    <b style={{ height: `${Math.max(12, item.count * 18)}px` }} />
+                    <span>{item.month.slice(5)}</span>
+                  </div>
+                ))
+            ) : (
+              <p className="muted-label">还没有浏览记录。</p>
+            )}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
 }
 
 function LeaderboardPanel({ leaderboard }) {
   const [tab, setTab] = useState("finished");
-  const tabs = [["finished", "年度读完", "本"], ["minutes", "阅读时长", "分钟"], ["active", "最近活跃", "次浏览"]];
+  const tabs = [
+    ["finished", "年度读完", "本"],
+    ["minutes", "阅读时长", "分钟"],
+    ["active", "最近活跃", "次浏览"],
+  ];
   const rows = leaderboard?.[tab] || [];
-  return <section className="growth-panel"><div className="leaderboard-tabs">{tabs.map(([id, label]) => <button key={id} className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}>{label}</button>)}</div><div className="leaderboard-list">{rows.map((item) => <article className={`leaderboard-row rank-${item.rank}`} key={item.id}><strong className="leaderboard-rank">{item.rank <= 3 ? <Medal size={19} /> : item.rank}</strong><div className="leaderboard-avatar">{item.name.slice(0, 1)}</div><div className="leaderboard-user"><strong>{item.name}</strong><span>{tab === "finished" ? `阅读时长 ${item.minutes} 分钟` : tab === "minutes" ? `读完 ${item.finished} 本` : "保持阅读记录"}</span></div><b>{item.score}<small>{tabs.find(([id]) => id === tab)?.[2]}</small></b></article>)}{!rows.length && <div className="empty-state"><Trophy size={28} /><h3>还没有排行榜数据</h3><p>开始记录阅读后，就会出现在这里。</p></div>}</div></section>;
+  return (
+    <section className="growth-panel">
+      <div className="leaderboard-tabs">
+        {tabs.map(([id, label]) => (
+          <button key={id} className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="leaderboard-list">
+        {rows.map((item) => (
+          <article className={`leaderboard-row rank-${item.rank}`} key={item.id}>
+            <strong className="leaderboard-rank">
+              {item.rank <= 3 ? <Medal size={19} /> : item.rank}
+            </strong>
+            <div className="leaderboard-avatar">{item.name.slice(0, 1)}</div>
+            <div className="leaderboard-user">
+              <strong>{item.name}</strong>
+              <span>
+                {tab === "finished"
+                  ? `阅读时长 ${item.minutes} 分钟`
+                  : tab === "minutes"
+                    ? `读完 ${item.finished} 本`
+                    : "保持阅读记录"}
+              </span>
+            </div>
+            <b>
+              {item.score}
+              <small>{tabs.find(([id]) => id === tab)?.[2]}</small>
+            </b>
+          </article>
+        ))}
+        {!rows.length && (
+          <div className="empty-state">
+            <Trophy size={28} />
+            <h3>还没有排行榜数据</h3>
+            <p>开始记录阅读后，就会出现在这里。</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 function AdminAnalytics({ analytics }) {
   const totalRevenue = analytics.sales.reduce((sum, item) => sum + item.revenue, 0);
-  return <section className="admin-section"><div className="admin-section-head"><div><span className="section-kicker">BUSINESS ANALYTICS</span><h2>经营分析</h2></div><span className="muted-label">来自 MySQL 实时聚合</span></div><div className="analytics-stat-grid"><div><ShoppingBag size={18} /><span>近六个月销售额</span><strong>¥{totalRevenue.toFixed(2)}</strong></div><div><Package size={18} /><span>读书会活动</span><strong>{analytics.clubs}</strong></div><div><ArrowLeftRight size={18} /><span>二手书在售</span><strong>{analytics.secondhand.find((item) => item.status === "active")?.count || 0}</strong></div></div><div className="analytics-grid"><section className="feature-card"><div className="content-heading"><div><span className="section-kicker">热销图书</span><h2>销售排行</h2></div></div>{analytics.topBooks.length ? analytics.topBooks.map((item, index) => <div className="bar-row" key={item.title}><span>{index + 1}. {item.title}</span><i><b style={{ width: `${Math.min(100, item.quantity * 15)}%` }} /></i><strong>{item.quantity}</strong></div>) : <p className="muted-label">暂无订单数据。</p>}</section><section className="feature-card"><div className="content-heading"><div><span className="section-kicker">阅读活跃度</span><h2>浏览趋势</h2></div></div>{analytics.activity.map((item) => <div className="bar-row" key={item.month}><span>{item.month}</span><i><b style={{ width: `${Math.min(100, item.views * 10)}%` }} /></i><strong>{item.views}</strong></div>)}</section></div></section>;
+  return (
+    <section className="admin-section">
+      <div className="admin-section-head">
+        <div>
+          <span className="section-kicker">BUSINESS ANALYTICS</span>
+          <h2>经营分析</h2>
+        </div>
+        <span className="muted-label">来自 MySQL 实时聚合</span>
+      </div>
+      <div className="analytics-stat-grid">
+        <div>
+          <ShoppingBag size={18} />
+          <span>近六个月销售额</span>
+          <strong>¥{totalRevenue.toFixed(2)}</strong>
+        </div>
+        <div>
+          <Package size={18} />
+          <span>读书会活动</span>
+          <strong>{analytics.clubs}</strong>
+        </div>
+        <div>
+          <ArrowLeftRight size={18} />
+          <span>二手书在售</span>
+          <strong>
+            {analytics.secondhand.find((item) => item.status === "active")?.count || 0}
+          </strong>
+        </div>
+      </div>
+      <div className="analytics-grid">
+        <section className="feature-card">
+          <div className="content-heading">
+            <div>
+              <span className="section-kicker">热销图书</span>
+              <h2>销售排行</h2>
+            </div>
+          </div>
+          {analytics.topBooks.length ? (
+            analytics.topBooks.map((item, index) => (
+              <div className="bar-row" key={item.title}>
+                <span>
+                  {index + 1}. {item.title}
+                </span>
+                <i>
+                  <b style={{ width: `${Math.min(100, item.quantity * 15)}%` }} />
+                </i>
+                <strong>{item.quantity}</strong>
+              </div>
+            ))
+          ) : (
+            <p className="muted-label">暂无订单数据。</p>
+          )}
+        </section>
+        <section className="feature-card">
+          <div className="content-heading">
+            <div>
+              <span className="section-kicker">阅读活跃度</span>
+              <h2>浏览趋势</h2>
+            </div>
+          </div>
+          {analytics.activity.map((item) => (
+            <div className="bar-row" key={item.month}>
+              <span>{item.month}</span>
+              <i>
+                <b style={{ width: `${Math.min(100, item.views * 10)}%` }} />
+              </i>
+              <strong>{item.views}</strong>
+            </div>
+          ))}
+        </section>
+      </div>
+    </section>
+  );
 }
 
 function AdminInventory({ inventory, onSave }) {
   const [drafts, setDrafts] = useState({});
-  const draft = (item) => drafts[item.id] || { stock: item.stock, status: item.status, reason: "库存调整" };
-  return <section className="admin-section"><div className="admin-section-head"><div><span className="section-kicker">INVENTORY CONTROL</span><h2>库存管理</h2></div><span className="muted-label">低于 5 本自动标记预警</span></div><div className="inventory-summary"><strong>{inventory.filter((item) => item.lowStock).length}</strong><span>本书需要补货</span><strong>{inventory.filter((item) => item.status === "paused").length}</strong><span>本书已暂停销售</span></div><div className="admin-table-wrap"><table className="admin-table inventory-table"><thead><tr><th>图书</th><th>当前库存</th><th>销售状态</th><th>调整原因</th><th>操作</th></tr></thead><tbody>{inventory.map((item) => { const value = draft(item); return <tr key={item.id}><td><strong>{item.title}</strong><small>{item.author}</small></td><td><input className={item.lowStock ? "inventory-stock low" : "inventory-stock"} type="number" min="0" value={value.stock} onChange={(e) => setDrafts((current) => ({ ...current, [item.id]: { ...value, stock: e.target.value } }))} /><small>{item.lowStock ? "库存预警" : `已调整 ${item.changes} 次`}</small></td><td><select value={value.status} onChange={(e) => setDrafts((current) => ({ ...current, [item.id]: { ...value, status: e.target.value } }))}><option value="active">正常销售</option><option value="paused">暂停销售</option><option value="sold_out">售罄</option></select></td><td><input value={value.reason} onChange={(e) => setDrafts((current) => ({ ...current, [item.id]: { ...value, reason: e.target.value } }))} /></td><td><button className="button button-outline inventory-save" onClick={() => onSave(item, value)}>保存库存</button></td></tr>; })}</tbody></table>{!inventory.length && <div className="admin-empty">暂无库存数据</div>}</div></section>;
+  const draft = (item) =>
+    drafts[item.id] || {
+      stock: item.stock,
+      status: item.status,
+      reason: "库存调整",
+    };
+  return (
+    <section className="admin-section">
+      <div className="admin-section-head">
+        <div>
+          <span className="section-kicker">INVENTORY CONTROL</span>
+          <h2>库存管理</h2>
+        </div>
+        <span className="muted-label">低于 5 本自动标记预警</span>
+      </div>
+      <div className="inventory-summary">
+        <strong>{inventory.filter((item) => item.lowStock).length}</strong>
+        <span>本书需要补货</span>
+        <strong>{inventory.filter((item) => item.status === "paused").length}</strong>
+        <span>本书已暂停销售</span>
+      </div>
+      <div className="admin-table-wrap">
+        <table className="admin-table inventory-table">
+          <thead>
+            <tr>
+              <th>图书</th>
+              <th>当前库存</th>
+              <th>销售状态</th>
+              <th>调整原因</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventory.map((item) => {
+              const value = draft(item);
+              return (
+                <tr key={item.id}>
+                  <td>
+                    <strong>{item.title}</strong>
+                    <small>{item.author}</small>
+                  </td>
+                  <td>
+                    <input
+                      className={item.lowStock ? "inventory-stock low" : "inventory-stock"}
+                      type="number"
+                      min="0"
+                      value={value.stock}
+                      onChange={(e) =>
+                        setDrafts((current) => ({
+                          ...current,
+                          [item.id]: { ...value, stock: e.target.value },
+                        }))
+                      }
+                    />
+                    <small>{item.lowStock ? "库存预警" : `已调整 ${item.changes} 次`}</small>
+                  </td>
+                  <td>
+                    <select
+                      value={value.status}
+                      onChange={(e) =>
+                        setDrafts((current) => ({
+                          ...current,
+                          [item.id]: { ...value, status: e.target.value },
+                        }))
+                      }
+                    >
+                      <option value="active">正常销售</option>
+                      <option value="paused">暂停销售</option>
+                      <option value="sold_out">售罄</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      value={value.reason}
+                      onChange={(e) =>
+                        setDrafts((current) => ({
+                          ...current,
+                          [item.id]: { ...value, reason: e.target.value },
+                        }))
+                      }
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="button button-outline inventory-save"
+                      onClick={() => onSave(item, value)}
+                    >
+                      保存库存
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {!inventory.length && <div className="admin-empty">暂无库存数据</div>}
+      </div>
+    </section>
+  );
 }
 
-function ForumView({ posts, category, setCategory, search, setSearch, onNew, onOpen, onLike, onReport, onFollowAuthor, onOpenAuthor, viewerId }) {
+function ForumView({
+  posts,
+  category,
+  setCategory,
+  search,
+  setSearch,
+  onNew,
+  onOpen,
+  onLike,
+  onReport,
+  onFollowAuthor,
+  onOpenAuthor,
+  viewerId,
+}) {
   const [feed, setFeed] = useState("推荐");
   const [likedPosts, setLikedPosts] = useState([]);
   const [savedPosts, setSavedPosts] = useState([]);
@@ -2134,10 +3111,17 @@ function ForumView({ posts, category, setCategory, search, setSearch, onNew, onO
                 <div className="post-footer">
                   <div className="post-author">
                     {post.authorId ? (
-                      <button className="author-link" onClick={() => onOpenAuthor(post.authorId)}>{post.author}</button>
-                    ) : post.author}
+                      <button className="author-link" onClick={() => onOpenAuthor(post.authorId)}>
+                        {post.author}
+                      </button>
+                    ) : (
+                      post.author
+                    )}
                     {post.authorId && post.authorId !== viewerId && (
-                      <button className="author-follow" onClick={() => onFollowAuthor(post.authorId)}>
+                      <button
+                        className="author-follow"
+                        onClick={() => onFollowAuthor(post.authorId)}
+                      >
                         <UserPlus size={12} /> 关注
                       </button>
                     )}
@@ -2151,7 +3135,11 @@ function ForumView({ posts, category, setCategory, search, setSearch, onNew, onO
                         likedPosts.includes(post.id) ? "post-action is-active" : "post-action"
                       }
                       onClick={() => {
-                        setLikedPosts((current) => current.includes(post.id) ? current.filter((id) => id !== post.id) : [...current, post.id]);
+                        setLikedPosts((current) =>
+                          current.includes(post.id)
+                            ? current.filter((id) => id !== post.id)
+                            : [...current, post.id],
+                        );
                         onLike(post);
                       }}
                     >
@@ -2411,7 +3399,12 @@ function ProfileView({
             </div>
           )}
           {tab === "reading" && (
-            <ReadingShelfPanel reading={reading} books={books} onUpdate={onUpdateReading} onOpenBook={onOpenBook} />
+            <ReadingShelfPanel
+              reading={reading}
+              books={books}
+              onUpdate={onUpdateReading}
+              onOpenBook={onOpenBook}
+            />
           )}
         </section>
       </div>
@@ -2419,19 +3412,140 @@ function ProfileView({
   );
 }
 function ReadingShelfPanel({ reading, onUpdate, onOpenBook }) {
-  const sections = [["want", "想读", Bookmark], ["reading", "在读", BookOpenCheck], ["read", "已读", Check]];
+  const sections = [
+    ["want", "想读", Bookmark],
+    ["reading", "在读", BookOpenCheck],
+    ["read", "已读", Check],
+  ];
   const stats = reading?.stats || {};
   return (
     <div className="reading-panel">
-      <div className="content-heading"><div><span className="section-kicker">PERSONAL READING</span><h2>我的阅读书架</h2></div><span className="muted-label">记录每一次翻页</span></div>
-      <div className="reading-stat-grid"><div><BookOpenCheck size={18} /><strong>{stats.finished || 0}</strong><span>本年度读完</span></div><div><Clock3 size={18} /><strong>{stats.minutes || 0}</strong><span>阅读分钟</span></div><div><BarChart3 size={18} /><strong>{stats.books || 0}</strong><span>书架藏书</span></div></div>
-      {sections.map(([status, label, Icon]) => <section className="reading-shelf-section" key={status}><div className="reading-section-head"><h3><Icon size={16} /> {label}</h3><span>{reading?.shelves?.[status]?.length || 0} 本</span></div><div className="reading-book-grid">{(reading?.shelves?.[status] || []).map((book) => <article key={book.id} className="reading-book-card"><button onClick={() => onOpenBook(book)}><img src={book.cover} alt="" /><span>{book.title}</span><small>{book.author}</small></button>{status === "reading" && <><div className="reading-progress"><b style={{ width: `${book.progress}%` }} /></div><small>{book.progress}% · {book.minutes} 分钟</small></>}{status !== "read" && <select value={status} onChange={(e) => onUpdate(book.id, { status: e.target.value, progress: e.target.value === "read" ? 100 : book.progress })}><option value="want">移到想读</option><option value="reading">移到在读</option><option value="read">标记已读</option></select>}</article>)}</div>{!(reading?.shelves?.[status] || []).length && <p className="muted-label reading-empty">从书籍详情页加入“想读”，开始建立自己的阅读轨迹。</p>}</section>)}
-      <section className="reading-history"><div className="reading-section-head"><h3><Eye size={16} /> 最近浏览</h3><span>最多显示 12 本</span></div><div className="history-list">{(reading?.history || []).map((book) => <button key={book.id} onClick={() => onOpenBook(book)}><img src={book.cover} alt="" /><span>{book.title}</span><small>{dateText(book.viewedAt)}</small></button>)}</div></section>
-      <div className="annual-reading-card"><div><span className="section-kicker">YEAR IN BOOKS</span><h3>{stats.year || new Date().getFullYear()} 年度书单</h3><p>已读 {stats.finished || 0} 本 · 共投入 {stats.minutes || 0} 分钟</p></div><button className="button button-dark" onClick={() => window.print()}><BarChart3 size={15} /> 生成年度书单</button></div>
+      <div className="content-heading">
+        <div>
+          <span className="section-kicker">PERSONAL READING</span>
+          <h2>我的阅读书架</h2>
+        </div>
+        <span className="muted-label">记录每一次翻页</span>
+      </div>
+      <div className="reading-stat-grid">
+        <div>
+          <BookOpenCheck size={18} />
+          <strong>{stats.finished || 0}</strong>
+          <span>本年度读完</span>
+        </div>
+        <div>
+          <Clock3 size={18} />
+          <strong>{stats.minutes || 0}</strong>
+          <span>阅读分钟</span>
+        </div>
+        <div>
+          <BarChart3 size={18} />
+          <strong>{stats.books || 0}</strong>
+          <span>书架藏书</span>
+        </div>
+      </div>
+      {sections.map(([status, label, Icon]) => (
+        <section className="reading-shelf-section" key={status}>
+          <div className="reading-section-head">
+            <h3>
+              <Icon size={16} /> {label}
+            </h3>
+            <span>{reading?.shelves?.[status]?.length || 0} 本</span>
+          </div>
+          <div className="reading-book-grid">
+            {(reading?.shelves?.[status] || []).map((book) => (
+              <article key={book.id} className="reading-book-card">
+                <button onClick={() => onOpenBook(book)}>
+                  <img src={book.cover} alt="" />
+                  <span>{book.title}</span>
+                  <small>{book.author}</small>
+                </button>
+                {status === "reading" && (
+                  <>
+                    <div className="reading-progress">
+                      <b style={{ width: `${book.progress}%` }} />
+                    </div>
+                    <small>
+                      {book.progress}% · {book.minutes} 分钟
+                    </small>
+                  </>
+                )}
+                {status !== "read" && (
+                  <select
+                    value={status}
+                    onChange={(e) =>
+                      onUpdate(book.id, {
+                        status: e.target.value,
+                        progress: e.target.value === "read" ? 100 : book.progress,
+                      })
+                    }
+                  >
+                    <option value="want">移到想读</option>
+                    <option value="reading">移到在读</option>
+                    <option value="read">标记已读</option>
+                  </select>
+                )}
+              </article>
+            ))}
+          </div>
+          {!(reading?.shelves?.[status] || []).length && (
+            <p className="muted-label reading-empty">
+              从书籍详情页加入“想读”，开始建立自己的阅读轨迹。
+            </p>
+          )}
+        </section>
+      ))}
+      <section className="reading-history">
+        <div className="reading-section-head">
+          <h3>
+            <Eye size={16} /> 最近浏览
+          </h3>
+          <span>最多显示 12 本</span>
+        </div>
+        <div className="history-list">
+          {(reading?.history || []).map((book) => (
+            <button key={book.id} onClick={() => onOpenBook(book)}>
+              <img src={book.cover} alt="" />
+              <span>{book.title}</span>
+              <small>{dateText(book.viewedAt)}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+      <div className="annual-reading-card">
+        <div>
+          <span className="section-kicker">YEAR IN BOOKS</span>
+          <h3>{stats.year || new Date().getFullYear()} 年度书单</h3>
+          <p>
+            已读 {stats.finished || 0} 本 · 共投入 {stats.minutes || 0} 分钟
+          </p>
+        </div>
+        <button className="button button-dark" onClick={() => window.print()}>
+          <BarChart3 size={15} /> 生成年度书单
+        </button>
+      </div>
     </div>
   );
 }
-function BookDetailModal({ book, reviews, isFavorite, onFavorite, onAdd, onClose, onReview, canReview, reviewSort, onReviewSort, onLikeReview, reviewComments, onLoadReviewComments, onSubmitReviewComment, books, onOpenRelated, onUpdateReading }) {
+function BookDetailModal({
+  book,
+  reviews,
+  isFavorite,
+  onFavorite,
+  onAdd,
+  onClose,
+  onReview,
+  canReview,
+  reviewSort,
+  onReviewSort,
+  onLikeReview,
+  reviewComments,
+  onLoadReviewComments,
+  onSubmitReviewComment,
+  books,
+  onOpenRelated,
+  onUpdateReading,
+}) {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [detailTab, setDetailTab] = useState("intro");
   const [replyOpen, setReplyOpen] = useState(null);
@@ -2466,9 +3580,20 @@ function BookDetailModal({ book, reviews, isFavorite, onFavorite, onAdd, onClose
             </div>
             <p className="detail-description">{book.description}</p>
             <div className="book-metadata-grid">
-              <span><b>ISBN</b>{book.isbn || "待补充"}</span>
-              <span><b>出版社</b>{book.publisher || "纸灯书局"}</span>
-              <span><b>出版时间</b>{book.publishedAt ? new Date(book.publishedAt).toLocaleDateString("zh-CN") : "待补充"}</span>
+              <span>
+                <b>ISBN</b>
+                {book.isbn || "待补充"}
+              </span>
+              <span>
+                <b>出版社</b>
+                {book.publisher || "纸灯书局"}
+              </span>
+              <span>
+                <b>出版时间</b>
+                {book.publishedAt
+                  ? new Date(book.publishedAt).toLocaleDateString("zh-CN")
+                  : "待补充"}
+              </span>
             </div>
             <div className="detail-price">
               <strong>¥{book.price}</strong>
@@ -2487,32 +3612,113 @@ function BookDetailModal({ book, reviews, isFavorite, onFavorite, onAdd, onClose
                 {isFavorite ? "已收藏" : "收藏"}
               </button>
             </div>
-            <div className="reading-actions"><button onClick={() => onUpdateReading(book.id, { status: "want" })}><Bookmark size={14} /> 加入想读</button><button onClick={() => onUpdateReading(book.id, { status: "reading", progress: 1 })}><BookOpenCheck size={14} /> 开始阅读</button></div>
+            <div className="reading-actions">
+              <button onClick={() => onUpdateReading(book.id, { status: "want" })}>
+                <Bookmark size={14} /> 加入想读
+              </button>
+              <button onClick={() => onUpdateReading(book.id, { status: "reading", progress: 1 })}>
+                <BookOpenCheck size={14} /> 开始阅读
+              </button>
+            </div>
           </div>
         </div>
         <div className="detail-tabs">
-          {[['intro', '内容简介'], ['toc', '目录'], ['excerpt', '内容试读'], ['author', '作者简介']].map(([id, label]) => (
-            <button key={id} className={detailTab === id ? "is-active" : ""} onClick={() => setDetailTab(id)}>{label}</button>
+          {[
+            ["intro", "内容简介"],
+            ["toc", "目录"],
+            ["excerpt", "内容试读"],
+            ["author", "作者简介"],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              className={detailTab === id ? "is-active" : ""}
+              onClick={() => setDetailTab(id)}
+            >
+              {label}
+            </button>
           ))}
         </div>
         <div className="detail-tab-panel">
           {detailTab === "intro" && <p>{book.description}</p>}
-          {detailTab === "toc" && <ol>{String(book.toc || "序章｜第一章｜第二章｜尾声").split("｜").map((item) => <li key={item}>{item}</li>)}</ol>}
-          {detailTab === "excerpt" && <blockquote>{book.excerpt || book.description}<br /><small>试读内容来自出版社授权节选</small></blockquote>}
-          {detailTab === "author" && <p>{book.authorBio || `${book.author}是一位持续观察生活、并把经验写进作品的作者。`}</p>}
+          {detailTab === "toc" && (
+            <ol>
+              {String(book.toc || "序章｜第一章｜第二章｜尾声")
+                .split("｜")
+                .map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+            </ol>
+          )}
+          {detailTab === "excerpt" && (
+            <blockquote>
+              {book.excerpt || book.description}
+              <br />
+              <small>试读内容来自出版社授权节选</small>
+            </blockquote>
+          )}
+          {detailTab === "author" && (
+            <p>{book.authorBio || `${book.author}是一位持续观察生活、并把经验写进作品的作者。`}</p>
+          )}
         </div>
         <div className="similar-books">
-          <div className="content-heading"><div><span className="section-kicker">继续发现</span><h3>相似书籍</h3></div></div>
-          <div className="similar-book-list">{books.filter((item) => item.id !== book.id && item.category === book.category).slice(0, 3).map((item) => <button key={item.id} onClick={() => onOpenRelated(item)}><img src={item.cover} alt="" /><span>{item.title}</span><small>{item.author}</small></button>)}</div>
+          <div className="content-heading">
+            <div>
+              <span className="section-kicker">继续发现</span>
+              <h3>相似书籍</h3>
+            </div>
+          </div>
+          <div className="similar-book-list">
+            {books
+              .filter((item) => item.id !== book.id && item.category === book.category)
+              .slice(0, 3)
+              .map((item) => (
+                <button key={item.id} onClick={() => onOpenRelated(item)}>
+                  <img src={item.cover} alt="" />
+                  <span>{item.title}</span>
+                  <small>{item.author}</small>
+                </button>
+              ))}
+          </div>
         </div>
         <div className="detail-review-head">
           <div>
             <span className="section-kicker">读者短评</span>
             <h3>看看别人怎么读</h3>
           </div>
-          <div className="review-controls"><select value={reviewSort} onChange={(e) => onReviewSort(e.target.value)}><option value="recent">最新</option><option value="helpful">最有帮助</option><option value="rating">评分最高</option></select><button className="text-link" disabled={!canReview} onClick={() => setReviewOpen(!reviewOpen)}>{reviewOpen ? "收起评论框" : canReview ? "写一条评论" : "购买后评价"} <Pencil size={14} /></button></div>
+          <div className="review-controls">
+            <select value={reviewSort} onChange={(e) => onReviewSort(e.target.value)}>
+              <option value="recent">最新</option>
+              <option value="helpful">最有帮助</option>
+              <option value="rating">评分最高</option>
+            </select>
+            <button
+              className="text-link"
+              disabled={!canReview}
+              onClick={() => setReviewOpen(!reviewOpen)}
+            >
+              {reviewOpen ? "收起评论框" : canReview ? "写一条评论" : "购买后评价"}{" "}
+              <Pencil size={14} />
+            </button>
+          </div>
         </div>
-        <div className="rating-distribution">{[5, 4, 3, 2, 1].map((score) => { const count = reviews.filter((review) => review.rating === score).length; return <div key={score}><span>{score} 星</span><i><b style={{ width: `${reviews.length ? (count / reviews.length) * 100 : 0}%` }} /></i><small>{count}</small></div>; })}</div>
+        <div className="rating-distribution">
+          {[5, 4, 3, 2, 1].map((score) => {
+            const count = reviews.filter((review) => review.rating === score).length;
+            return (
+              <div key={score}>
+                <span>{score} 星</span>
+                <i>
+                  <b
+                    style={{
+                      width: `${reviews.length ? (count / reviews.length) * 100 : 0}%`,
+                    }}
+                  />
+                </i>
+                <small>{count}</small>
+              </div>
+            );
+          })}
+        </div>
         {reviewOpen && (
           <form className="review-form" onSubmit={submit}>
             <div className="star-input">
@@ -2559,8 +3765,48 @@ function BookDetailModal({ book, reviews, isFavorite, onFavorite, onAdd, onClose
                   <time>{dateText(review.createdAt)}</time>
                 </div>
                 <p>{review.content}</p>
-                <div className="review-actions"><button onClick={() => onLikeReview(review.id)} className={review.liked ? "is-active" : ""}><ThumbsUp size={12} /> {review.helpful} 有帮助</button><button onClick={() => { const next = replyOpen === review.id ? null : review.id; setReplyOpen(next); if (next) onLoadReviewComments(review.id); }}><MessageCircle size={12} /> 回复</button></div>
-                {replyOpen === review.id && <div className="review-replies">{(reviewComments[review.id] || []).map((comment) => <p key={comment.id}><strong>{comment.user}</strong>：{comment.content}</p>)}<form onSubmit={(e) => { e.preventDefault(); if (replyText.trim()) { onSubmitReviewComment(review.id, replyText); setReplyText(""); } }}><input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="回复这条评论" /><button>发送</button></form></div>}
+                <div className="review-actions">
+                  <button
+                    onClick={() => onLikeReview(review.id)}
+                    className={review.liked ? "is-active" : ""}
+                  >
+                    <ThumbsUp size={12} /> {review.helpful} 有帮助
+                  </button>
+                  <button
+                    onClick={() => {
+                      const next = replyOpen === review.id ? null : review.id;
+                      setReplyOpen(next);
+                      if (next) onLoadReviewComments(review.id);
+                    }}
+                  >
+                    <MessageCircle size={12} /> 回复
+                  </button>
+                </div>
+                {replyOpen === review.id && (
+                  <div className="review-replies">
+                    {(reviewComments[review.id] || []).map((comment) => (
+                      <p key={comment.id}>
+                        <strong>{comment.user}</strong>：{comment.content}
+                      </p>
+                    ))}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (replyText.trim()) {
+                          onSubmitReviewComment(review.id, replyText);
+                          setReplyText("");
+                        }
+                      }}
+                    >
+                      <input
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="回复这条评论"
+                      />
+                      <button>发送</button>
+                    </form>
+                  </div>
+                )}
               </div>
             </article>
           ))}
@@ -2637,7 +3883,15 @@ function CartDrawer({ cart, count, total, onClose, onUpdate, onRemove, onCheckou
   );
 }
 function NewPostModal({ onClose, onSubmit }) {
-  const [data, setData] = useState({ title: "", excerpt: "", bodyMarkdown: "", imageUrl: "", imageData: "", tags: [], category: "阅读分享" });
+  const [data, setData] = useState({
+    title: "",
+    excerpt: "",
+    bodyMarkdown: "",
+    imageUrl: "",
+    imageData: "",
+    tags: [],
+    category: "阅读分享",
+  });
   const [tagText, setTagText] = useState("");
   return (
     <div className="overlay" onClick={onClose}>
@@ -2656,7 +3910,12 @@ function NewPostModal({ onClose, onSubmit }) {
             e.preventDefault();
             const content = data.excerpt.trim() || data.bodyMarkdown.trim();
             if (!content) return;
-            onSubmit({ ...data, excerpt: content, bodyMarkdown: data.bodyMarkdown.trim() || content, tags: tagText.split(/[，,\s]+/).filter(Boolean) });
+            onSubmit({
+              ...data,
+              excerpt: content,
+              bodyMarkdown: data.bodyMarkdown.trim() || content,
+              tags: tagText.split(/[，,\s]+/).filter(Boolean),
+            });
           }}
           className="modal-form"
         >
@@ -2688,12 +3947,35 @@ function NewPostModal({ onClose, onSubmit }) {
           </label>
           <label>
             或上传图片
-            <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) { window.alert("图片不能超过 3MB"); e.target.value = ""; return; } const reader = new FileReader(); reader.onload = () => setData((current) => ({ ...current, imageData: String(reader.result || "") })); reader.readAsDataURL(file); }} />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 3 * 1024 * 1024) {
+                  window.alert("图片不能超过 3MB");
+                  e.target.value = "";
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () =>
+                  setData((current) => ({
+                    ...current,
+                    imageData: String(reader.result || ""),
+                  }));
+                reader.readAsDataURL(file);
+              }}
+            />
             <small className="field-hint">图片会随帖子保存到数据库，支持 JPG、PNG，最大 3MB</small>
           </label>
           <label>
             帖子标签
-            <input value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="例如：毛姆,年度书单" />
+            <input
+              value={tagText}
+              onChange={(e) => setTagText(e.target.value)}
+              placeholder="例如：毛姆,年度书单"
+            />
           </label>
           <label>
             正文
@@ -2769,7 +4051,12 @@ function ProfileEditModal({ profile, onClose, onSave }) {
   );
 }
 function AddressModal({ onClose, onSave }) {
-  const [data, setData] = useState({ label: "家", receiver: "", phone: "", detail: "" });
+  const [data, setData] = useState({
+    label: "家",
+    receiver: "",
+    phone: "",
+    detail: "",
+  });
   return (
     <div className="overlay" onClick={onClose}>
       <div className="form-modal" onClick={(e) => e.stopPropagation()}>
@@ -2851,8 +4138,14 @@ function ForumPostModal({ post, comments, onClose, onSubmit, onLikeComment }) {
           <div>
             <strong>{post.author}</strong>
             <p>{renderMarkdown(post.bodyMarkdown || post.excerpt)}</p>
-            {post.imageUrl && <img className="post-detail-image" src={post.imageUrl} alt="帖子配图" />}
-            <div className="post-detail-tags">{post.tags?.map((tag) => <span key={tag}>#{tag}</span>)}</div>
+            {post.imageUrl && (
+              <img className="post-detail-image" src={post.imageUrl} alt="帖子配图" />
+            )}
+            <div className="post-detail-tags">
+              {post.tags?.map((tag) => (
+                <span key={tag}>#{tag}</span>
+              ))}
+            </div>
           </div>
         </div>
         <div className="comment-heading">
@@ -2866,7 +4159,12 @@ function ForumPostModal({ post, comments, onClose, onSubmit, onLikeComment }) {
                 <strong>{comment.user}</strong>
                 <time>{dateText(comment.createdAt)}</time>
                 <p>{comment.content}</p>
-                <button className={comment.liked ? "comment-like is-active" : "comment-like"} onClick={() => onLikeComment(comment.id)}><ThumbsUp size={12} /> {comment.likes || 0}</button>
+                <button
+                  className={comment.liked ? "comment-like is-active" : "comment-like"}
+                  onClick={() => onLikeComment(comment.id)}
+                >
+                  <ThumbsUp size={12} /> {comment.likes || 0}
+                </button>
               </div>
             </article>
           ))}
@@ -2900,8 +4198,10 @@ function ForumPostModal({ post, comments, onClose, onSubmit, onLikeComment }) {
 function renderMarkdown(text) {
   const parts = String(text || "").split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   return parts.map((part, index) => {
-    if (part.startsWith("**") && part.endsWith("**")) return <strong key={index}>{part.slice(2, -2)}</strong>;
-    if (part.startsWith("`") && part.endsWith("`")) return <code key={index}>{part.slice(1, -1)}</code>;
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("`") && part.endsWith("`"))
+      return <code key={index}>{part.slice(1, -1)}</code>;
     return <span key={index}>{part}</span>;
   });
 }
@@ -2910,21 +4210,48 @@ function UserProfileModal({ profile, onClose, onFollow, onOpenPost }) {
     <div className="overlay" onClick={onClose}>
       <div className="form-modal user-profile-modal" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
-          <div><span className="section-kicker">书友主页</span><h2>{profile.name}</h2></div>
-          <button className="icon-button" onClick={onClose} aria-label="关闭"><X size={20} /></button>
+          <div>
+            <span className="section-kicker">书友主页</span>
+            <h2>{profile.name}</h2>
+          </div>
+          <button className="icon-button" onClick={onClose} aria-label="关闭">
+            <X size={20} />
+          </button>
         </div>
         <p className="user-profile-bio">{profile.bio || "这位书友还没有写下简介。"}</p>
-        <div className="user-profile-stats"><span>{profile.posts.length} 篇帖子</span><span>{profile.points} 纸灯积分</span></div>
-        <button className="button button-outline" onClick={onFollow}><UserPlus size={15} /> 关注 / 取消关注</button>
+        <div className="user-profile-stats">
+          <span>{profile.posts.length} 篇帖子</span>
+          <span>{profile.points} 纸灯积分</span>
+        </div>
+        <button className="button button-outline" onClick={onFollow}>
+          <UserPlus size={15} /> 关注 / 取消关注
+        </button>
         <div className="user-profile-posts">
-          {profile.posts.map((post) => <button key={post.id} onClick={() => { onClose(); onOpenPost(post); }}><strong>{post.title}</strong><small>{post.likes} 赞 · {post.comments} 回复</small></button>)}
+          {profile.posts.map((post) => (
+            <button
+              key={post.id}
+              onClick={() => {
+                onClose();
+                onOpenPost(post);
+              }}
+            >
+              <strong>{post.title}</strong>
+              <small>
+                {post.likes} 赞 · {post.comments} 回复
+              </small>
+            </button>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 function CheckoutModal({ total, cart, addresses = [], onClose, onSuccess }) {
-  const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
+  const [customer, setCustomer] = useState({
+    name: "",
+    phone: "",
+    address: "",
+  });
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -2935,12 +4262,21 @@ function CheckoutModal({ total, cart, addresses = [], onClose, onSuccess }) {
       return;
     }
     setSelectedAddressId(String(preferred.id));
-    setCustomer({ name: preferred.receiver, phone: preferred.phone, address: preferred.detail });
+    setCustomer({
+      name: preferred.receiver,
+      phone: preferred.phone,
+      address: preferred.detail,
+    });
   }, [addresses]);
   function selectAddress(value) {
     setSelectedAddressId(value);
     const address = addresses.find((item) => String(item.id) === value);
-    if (address) setCustomer({ name: address.receiver, phone: address.phone, address: address.detail });
+    if (address)
+      setCustomer({
+        name: address.receiver,
+        phone: address.phone,
+        address: address.detail,
+      });
     else setCustomer({ name: "", phone: "", address: "" });
   }
   async function submit(e) {
@@ -2988,7 +4324,9 @@ function CheckoutModal({ total, cart, addresses = [], onClose, onSuccess }) {
                 </option>
               ))}
             </select>
-            {addresses.length > 0 && <small className="field-hint">已自动填入个人中心的默认地址，也可以在这里切换。</small>}
+            {addresses.length > 0 && (
+              <small className="field-hint">已自动填入个人中心的默认地址，也可以在这里切换。</small>
+            )}
           </label>
           <label>
             收货人

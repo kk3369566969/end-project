@@ -224,10 +224,19 @@ app.get("/api/forum/posts", async (req, res) => {
 app.post("/api/forum/posts", requireUser, async (req, res) => {
   const { title, excerpt, bodyMarkdown, imageUrl, imageData, category, tags } = req.body || {};
   const content = String(excerpt || bodyMarkdown || "").trim();
-  if (!title?.trim() || !content)
-    return res.status(400).json({ message: "请填写帖子标题和正文" });
+  if (!title?.trim() || !content) return res.status(400).json({ message: "请填写帖子标题和正文" });
   try {
-    res.status(201).json(await createForumPost(req.user.id, { title, excerpt: content, bodyMarkdown, imageUrl, imageData, category, tags }));
+    res.status(201).json(
+      await createForumPost(req.user.id, {
+        title,
+        excerpt: content,
+        bodyMarkdown,
+        imageUrl,
+        imageData,
+        category,
+        tags,
+      }),
+    );
   } catch (error) {
     res.status(500).json({ message: "帖子发布失败", detail: error.message });
   }
@@ -329,7 +338,8 @@ app.get("/api/secondhand", requireUser, async (req, res) => {
   }
 });
 app.post("/api/secondhand", requireUser, async (req, res) => {
-  if (!req.body?.title?.trim() || !req.body?.author?.trim()) return res.status(400).json({ message: "请填写书名和作者" });
+  if (!req.body?.title?.trim() || !req.body?.author?.trim())
+    return res.status(400).json({ message: "请填写书名和作者" });
   try {
     res.status(201).json(await createSecondhand(req.user.id, req.body));
   } catch (error) {
@@ -351,7 +361,8 @@ app.get("/api/clubs", requireUser, async (req, res) => {
   }
 });
 app.post("/api/clubs", requireUser, async (req, res) => {
-  if (!req.body?.title?.trim() || !req.body?.eventAt) return res.status(400).json({ message: "请填写活动标题和时间" });
+  if (!req.body?.title?.trim() || !req.body?.eventAt)
+    return res.status(400).json({ message: "请填写活动标题和时间" });
   try {
     res.status(201).json(await createClub(req.user.id, req.body));
   } catch (error) {
@@ -424,7 +435,9 @@ app.patch("/api/profile", requireUser, async (req, res) => {
 });
 app.post("/api/profile/favorites/:bookId", requireUser, async (req, res) => {
   try {
-    res.json({ favorites: await toggleFavorite(req.user.id, req.params.bookId) });
+    res.json({
+      favorites: await toggleFavorite(req.user.id, req.params.bookId),
+    });
   } catch (error) {
     res.status(500).json({ message: "收藏更新失败", detail: error.message });
   }
@@ -441,16 +454,14 @@ app.post("/api/profile/addresses", requireUser, async (req, res) => {
   if (!receiver?.trim() || !phone?.trim() || !detail?.trim())
     return res.status(400).json({ message: "请完整填写地址信息" });
   try {
-    res
-      .status(201)
-      .json(
-        await addAddress(req.user.id, {
-          label: label?.trim() || "常用地址",
-          receiver,
-          phone,
-          detail,
-        }),
-      );
+    res.status(201).json(
+      await addAddress(req.user.id, {
+        label: label?.trim() || "常用地址",
+        receiver,
+        phone,
+        detail,
+      }),
+    );
   } catch (error) {
     res.status(500).json({ message: "地址保存失败", detail: error.message });
   }
@@ -521,9 +532,10 @@ app.delete("/api/admin/books/:id", requireAdmin, async (req, res) => {
     await deleteBook(req.params.id);
     res.json({ ok: true });
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "图书删除失败，请先处理关联订单或评论", detail: error.message });
+    res.status(400).json({
+      message: "图书删除失败，请先处理关联订单或评论",
+      detail: error.message,
+    });
   }
 });
 app.get("/api/admin/orders", requireAdmin, async (_req, res) => {
@@ -590,4 +602,6 @@ app.delete("/api/admin/reviews/:id", requireAdmin, async (req, res) => {
 
 initDatabase()
   .then(() => (isFallback() ? null : seedNewModules()))
-  .finally(() => app.listen(port, () => console.log(`Paper Lantern API running at http://localhost:${port}`)));
+  .finally(() =>
+    app.listen(port, () => console.log(`Paper Lantern API running at http://localhost:${port}`)),
+  );

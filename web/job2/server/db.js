@@ -48,14 +48,16 @@ async function ensureFeatureSchema() {
     ["toc", "TEXT NULL"],
     ["excerpt", "TEXT NULL"],
   ];
-  for (const [column, definition] of bookColumns) await addColumnIfMissing("books", column, definition);
+  for (const [column, definition] of bookColumns)
+    await addColumnIfMissing("books", column, definition);
   for (const [column, definition] of [
     ["body_markdown", "TEXT NULL"],
     ["image_url", "VARCHAR(500) NULL"],
     ["image_data", "MEDIUMTEXT NULL"],
     ["pinned", "BOOLEAN NOT NULL DEFAULT FALSE"],
     ["report_count", "INT NOT NULL DEFAULT 0"],
-  ]) await addColumnIfMissing("forum_posts", column, definition);
+  ])
+    await addColumnIfMissing("forum_posts", column, definition);
   await addColumnIfMissing("forum_comments", "likes", "INT NOT NULL DEFAULT 0");
   await pool.query(`CREATE TABLE IF NOT EXISTS reading_shelves (
     user_id BIGINT NOT NULL, book_id INT NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'want',
@@ -240,7 +242,12 @@ export async function createOrder({ userId, customer, items, total }) {
       [userId, `订单 #${order.insertId} 已提交，当前状态：待发货`],
     );
     await connection.commit();
-    return { id: order.insertId, status: "待发货", total, createdAt: new Date().toISOString() };
+    return {
+      id: order.insertId,
+      status: "待发货",
+      total,
+      createdAt: new Date().toISOString(),
+    };
   } catch (error) {
     await connection.rollback();
     throw error;
