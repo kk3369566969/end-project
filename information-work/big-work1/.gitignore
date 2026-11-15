@@ -1,0 +1,7 @@
+.venv/
+.idea/
+__pycache__/
+*.py[cod]
+data/crawl/
+data/report-raw-*/
+docx_render_report/
